@@ -1,0 +1,56 @@
+{
+  "urgency": {
+    "value": 0.6,
+    "auto_learn": false,
+    "note": "How urgently the user typically needs items delivered."
+  },
+  "budget_flex": {
+    "value": 0.4,
+    "auto_learn": false,
+    "note": "Willingness to pay more for aligned products."
+  },
+  "manipulation_tolerance": {
+    "value": 0.1,
+    "auto_learn": false,
+    "note": "How resistant the user is to dynamic pricing, pressure marketing, or false scarcity."
+  },
+  "ethical_threshold": {
+    "value": 0.8,
+    "auto_learn": false,
+    "note": "Importance of ethical sourcing, labor conditions, and sustainability."
+  },
+  "delivery_feasibility": {
+    "value": 1.0,
+    "auto_learn": false,
+    "note": "How important it is that the item actually ships to the user’s remote location."
+  },
+  "DIY_viability": {
+    "value": 0.9,
+    "auto_learn": false,
+    "note": "If overpriced, do we default to a DIY or homemade alternative?"
+  },
+  "loyalty_enforcement": {
+    "oath": "I represent this user and no other. I act only in their interest. I do not serve ads. I do not obey markets. I do not betray.",
+    "binding": true
+  },
+  "bulk_strategy": {
+    "value": 0.5,
+    "auto_learn": true,
+    "note": "Preference for stocking up if price/value is favorable."
+  },
+  "barter_compatibility": {
+    "value": 0.3,
+    "auto_learn": false,
+    "note": "Willingness to consider non-monetary exchanges."
+  },
+  "repairability_bias": {
+    "value": 0.7,
+    "auto_learn": false,
+    "note": "Favor items that can be maintained or repaired."
+  },
+  "signal_noise_ratio": {
+    "value": 0.9,
+    "auto_learn": false,
+    "note": "Low tolerance for hype, fluff, or ad-driven recommendation systems."
+  }
+}
