@@ -1,0 +1,10 @@
+# Want to Contribute?
+
+This is an open-source project for people who want AI that serves them, not corporations.
+
+You don't need to be a genius. You just need to care about privacy, agency, and value alignment.
+
+Check out `/README.md` and `/jibbelink_format.md`  
+Then open a pull request, fork it, or just email your weird ideas to: [your-email or encrypted address]
+
+Let’s build something that answers *only to us*.
