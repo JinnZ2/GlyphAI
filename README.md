@@ -38,3 +38,15 @@ This project was co-created by Jinn2z, an actual human with off-grid survival kn
 ## ✦ License
 
 MIT License. Use it. Fork it. Make it weirder. But don’t sell it out. GlyphAI doesn’t betray.
+
+## Quick Start
+
+1. Install dependencies: `pip install -r requirements.txt`
+2. Edit `glyph_profile.json` with your values
+3. Run demo: `python demo.py`
+
+You should see:
+- Manipulation detection in action
+- Geographic price comparison
+- Value-aligned recommendation
+- Jibbelink protocol message generation
