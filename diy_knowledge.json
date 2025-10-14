@@ -1,0 +1,10 @@
+{
+  "led_bulb": {
+    "alternatives": [
+      "Check local Buy Nothing groups",
+      "Habitat for Humanity ReStore often has lighting",
+      "LED retrofits cheaper than new fixtures"
+    ],
+    "repair": "Most LED failures are driver board, not LEDs - replaceable"
+  }
+}
