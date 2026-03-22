@@ -1,7 +1,4 @@
-requests
-beautifulsoup4
-
-# Currently only standard library is used
+# Currently only standard library is used.
 # Future additions:
 # requests  # for real scraping
 # beautifulsoup4  # for HTML parsing

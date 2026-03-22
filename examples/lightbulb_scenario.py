@@ -1,9 +1,13 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from glyph_engine import Glyph
 from geo_price_analyzer import GeoPriceAnalyzer
-from manipulation_detector import ManipulationDetector
+from ManipulationDetector import ManipulationDetector
 
 # Load user glyph
-glyph = Glyph.from_file("examples/user_glyph.json")
+glyph = Glyph("glyph_profile.json")
 
 # Mock product listing
 product = {
@@ -22,6 +26,5 @@ analyzer = GeoPriceAnalyzer(glyph)
 geo_results = analyzer.analyze_prices(product['name'], user_zip="90001")
 
 # Output
-print("🚩 Manipulation Detected:", flags)
-print("📍 Price Analysis:", geo_results)
-print("💡 Recommendation:", generate_recommendation(glyph, flags, geo_results))
+print("Manipulation Detected:", flags)
+print("Price Analysis:", geo_results)

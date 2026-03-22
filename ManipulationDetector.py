@@ -3,8 +3,9 @@ class ManipulationDetector:
         flags = []
         
         # Urgency manipulation
-        if any(word in product_data['description'].lower() 
-               for word in ['limited time', 'only X left', 'ending soon']):
+        desc = product_data.get('description', '').lower()
+        if any(word in desc
+               for word in ['limited time', 'only', 'left in stock', 'ending soon']):
             flags.append({
                 "type": "FAKE_URGENCY",
                 "severity": 0.7,
