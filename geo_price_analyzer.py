@@ -5,6 +5,8 @@ class GeoPriceAnalyzer:
         self.glyph = glyph
 
     def fetch_mock_prices(self, product_name, zip_code):
+        # Mock data keyed by user zip code; in the future this will query real APIs.
+        # For now, returns the same regional data regardless of zip_code.
         return {
             "90301": {"in_store": 8.99, "online": 10.49, "distance": 2.1},
             "90210": {"in_store": 7.75, "online": 9.99, "distance": 7.5},
