@@ -1,12 +1,18 @@
 from glyph_engine import Glyph
 
+# Fallbacks used when a glyph profile is missing a key, so analysis degrades
+# gracefully instead of crashing on a None comparison.
+DEFAULT_URGENCY = 0.5
+DEFAULT_BUDGET_FLEX = 0.5
+DEFAULT_DELIVERY_FEASIBILITY = 1.0
+
+
 class GeoPriceAnalyzer:
     def __init__(self, glyph: Glyph):
         self.glyph = glyph
 
     def fetch_mock_prices(self, product_name, zip_code):
-        # Mock data keyed by user zip code; in the future this will query real APIs.
-        # For now, returns the same regional data regardless of zip_code.
+        # Mock data; in the future this will query real APIs.
         return {
             "90301": {"in_store": 8.99, "online": 10.49, "distance": 2.1},
             "90210": {"in_store": 7.75, "online": 9.99, "distance": 7.5},
@@ -15,9 +21,10 @@ class GeoPriceAnalyzer:
 
     def analyze_prices(self, product_name, user_zip="90001"):
         regional_data = self.fetch_mock_prices(product_name, user_zip)
-        user_urgency = self.glyph.get_value("urgency")
-        budget_flex = self.glyph.get_value("budget_flex")
-        delivery_ok = self.glyph.get_value("delivery_feasibility")
+        user_urgency = self.glyph.get_value("urgency", DEFAULT_URGENCY)
+        budget_flex = self.glyph.get_value("budget_flex", DEFAULT_BUDGET_FLEX)
+        delivery_ok = self.glyph.get_value("delivery_feasibility",
+                                           DEFAULT_DELIVERY_FEASIBILITY)
 
         result = []
         for region, info in regional_data.items():
@@ -39,6 +46,7 @@ class GeoPriceAnalyzer:
                 "online": info["online"],
                 "distance_miles": info["distance"],
                 "price_gap": price_gap,
+                "is_local": region == user_zip,
                 "suggestion": suggestion
             })
         return result

@@ -1,8 +1,8 @@
 ## Phase 0: Proof of Concept (Current)
 - [x] Glyph schema
 - [x] GeoPriceAnalyzer with mock data
-- [ ] One end-to-end example that runs
-- [ ] Manipulation detection library
+- [x] One end-to-end example that runs
+- [x] Manipulation detection library
 
 ## Phase 1: MVP (Someone Picks This Up)
 - [ ] Real price scraping (3-5 major vendors)

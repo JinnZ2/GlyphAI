@@ -8,46 +8,10 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import json
 from glyph_engine import Glyph
 from geo_price_analyzer import GeoPriceAnalyzer
 from bot_network_interface import JibbelinkNegotiator
-
-class ManipulationDetector:
-    """Detects dark patterns in product listings"""
-    
-    def scan(self, product):
-        flags = []
-        desc = product.get('description', '').lower()
-        
-        # Fake urgency
-        urgency_words = ['limited time', 'only', 'left in stock', 'ending soon', 'hurry']
-        if any(word in desc for word in urgency_words):
-            flags.append({
-                "type": "FAKE_URGENCY",
-                "severity": 0.7,
-                "evidence": "Uses time-pressure language without evidence"
-            })
-        
-        # Suspicious discounts
-        if product.get('was_price') and product.get('price'):
-            discount = (product['was_price'] - product['price']) / product['was_price']
-            if discount > 0.4:
-                flags.append({
-                    "type": "SUSPICIOUS_DISCOUNT",
-                    "severity": 0.6,
-                    "evidence": f"{discount*100:.0f}% off - original price may be inflated"
-                })
-        
-        # Subscription traps
-        if 'subscribe' in desc or 'auto-renew' in desc:
-            flags.append({
-                "type": "SUBSCRIPTION_TRAP",
-                "severity": 0.5,
-                "evidence": "May include recurring charges"
-            })
-        
-        return flags
+from ManipulationDetector import ManipulationDetector
 
 def generate_recommendation(glyph, product, manipulation_flags, geo_results):
     """Core decision logic based on glyph values"""

@@ -31,7 +31,8 @@ GlyphAI/
 │   ├── demo.py                # Full end-to-end demo of all features
 │   └── lightbulb_scenario.py  # Single-product use case example
 ├── tests/
-│   └── test_manipulation_detector.py  # Basic assertion-based tests
+│   ├── test_manipulation_detector.py  # Detection rule tests
+│   └── test_glyph_engine.py           # Profile loading + analyzer robustness tests
 ├── README.md
 ├── ARCHITECTURE.md            # System design documentation
 ├── ROADMAP.md                 # Development roadmap
@@ -63,7 +64,10 @@ python scheduler.py
 
 # Run tests
 python tests/test_manipulation_detector.py
+python tests/test_glyph_engine.py
 ```
+
+Examples and the scheduler resolve `glyph_profile.json` relative to the repo, so they can be run from any working directory.
 
 ## Development Conventions
 
@@ -85,6 +89,8 @@ python tests/test_manipulation_detector.py
 - This is an early-stage project (Phase 0). Keep changes simple and aligned with existing patterns.
 - All modules currently use only the Python standard library. Do not add external dependencies without explicit approval.
 - The glyph profile values (0–1 scale) drive all decision logic. Respect the user's value thresholds.
-- When adding new detection patterns to `ManipulationDetector.py`, follow the existing flag format: `{"flag": "FLAG_NAME", "severity": "low|medium|high", "evidence": "..."}`.
+- When adding new detection patterns to `ManipulationDetector.py`, follow the existing flag format: `{"type": "FLAG_NAME", "severity": <float 0.0–1.0>, "evidence": "..."}`. Severity is a **float**, not a string — `test_flag_shape` enforces this.
+- `ManipulationDetector` is the single source of truth for detection. Do not re-implement it inside examples; import it. Its `scan()` method is an alias for `scan_listing()`.
+- Listings may carry the current price as either `price` or `now_price`; the detector accepts both. Keep it that way when adding price-based rules.
 - When adding new Jibbelink message types, follow the spec in `jibbelink_format.md` and security requirements in `JibbelinkSecurity.md`.
 - Test new functionality by adding assertion-based tests in `tests/`.

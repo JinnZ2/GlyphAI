@@ -9,9 +9,10 @@
 - ✅ Glyph schema defined
 - ✅ GeoPriceAnalyzer working (with mock data)
 - ✅ Jibbelink protocol spec'd
-- ⚠️ Manipulation detection (partial)
+- ✅ Manipulation detection (FAKE_URGENCY, SUSPICIOUS_DISCOUNT, SUBSCRIPTION_TRAP)
+- ✅ End-to-end example that runs (`examples/demo.py`)
 - ❌ Real scraping (needs implementation)
-- ❌ DIY fallback (needs knowledge base)
+- ⚠️ DIY fallback (knowledge base stub in `diy_knowledge.json`, not yet wired in)
 
 ### Next Steps
 See ROADMAP.md
