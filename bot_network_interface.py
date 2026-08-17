@@ -7,7 +7,8 @@ class JibbelinkNegotiator:
 
     def create_message(self, msg_type, product_id, price, recipient="VENDOR_BOT"):
         message = {
-            "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.datetime.now(datetime.timezone.utc)
+                                 .strftime("%Y-%m-%dT%H:%M:%SZ"),
             "sender": "GLYPH_AI",
             "recipient": recipient,
             "message_type": msg_type,

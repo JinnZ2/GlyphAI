@@ -41,12 +41,27 @@ MIT License. Use it. Fork it. Make it weirder. But don’t sell it out. GlyphAI 
 
 ## Quick Start
 
-1. Install dependencies: `pip install -r requirements.txt`
-2. Edit `glyph_profile.json` with your values
-3. Run demo: `python demo.py`
+GlyphAI currently runs on the Python standard library alone — there is nothing to install.
+
+1. Edit `glyph_profile.json` with your values
+2. Run the demo: `python examples/demo.py`
 
 You should see:
 - Manipulation detection in action
 - Geographic price comparison
 - Value-aligned recommendation
 - Jibbelink protocol message generation
+
+Other entry points:
+
+```bash
+python examples/lightbulb_scenario.py   # single-product example
+python scheduler.py                     # runs analysis on a 60s loop (Ctrl-C to stop)
+```
+
+Run the tests with:
+
+```bash
+python tests/test_manipulation_detector.py
+python tests/test_glyph_engine.py
+```
