@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 
 # Resolve the default profile next to this module so the engine works no matter
 # which directory the caller was run from.
@@ -25,10 +26,12 @@ class Glyph:
         try:
             with open(self.file_path, 'r') as file:
                 data = json.load(file)
-                print("Glyph loaded successfully.")
+                # Diagnostics go to stderr so stdout stays machine-parseable
+                # (see `cli.py --json`).
+                print("Glyph loaded successfully.", file=sys.stderr)
                 return data
         except Exception as e:
-            print(f"Failed to load glyph profile: {e}")
+            print(f"Failed to load glyph profile: {e}", file=sys.stderr)
             return {}
 
     def get_value(self, key, default=None):

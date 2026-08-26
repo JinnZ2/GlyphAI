@@ -5,10 +5,12 @@
 - [x] Manipulation detection library
 
 ## Phase 1: MVP (Someone Picks This Up)
-- [ ] Real price scraping (3-5 major vendors)
+- [ ] Real price scraping (3-5 major vendors) — **blocked:** needs external
+      dependencies (`requests`/`beautifulsoup4`); everything else is stdlib
 - [ ] Price history tracking
-- [ ] CLI interface
-- [ ] Basic DIY fallback (even just a list of resources)
+- [x] CLI interface (`python cli.py analyze|profile|diy`)
+- [x] Basic DIY fallback — `diy_knowledge.json` is loaded and matched by
+      `diy_knowledge.py`; grow it by adding entries, not code
 
 ## Phase 2: Usable (Community Adoption)
 - [ ] Browser extension

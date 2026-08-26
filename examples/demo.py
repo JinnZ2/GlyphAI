@@ -12,61 +12,7 @@ from glyph_engine import Glyph
 from geo_price_analyzer import GeoPriceAnalyzer
 from bot_network_interface import JibbelinkNegotiator
 from ManipulationDetector import ManipulationDetector
-
-def generate_recommendation(glyph, product, manipulation_flags, geo_results):
-    """Core decision logic based on glyph values"""
-    
-    manipulation_tolerance = glyph.get_value('manipulation_tolerance')
-    diy_viability = glyph.get_value('DIY_viability')
-    ethical_threshold = glyph.get_value('ethical_threshold')
-    
-    recommendation = {
-        "action": None,
-        "reasoning": [],
-        "alternatives": []
-    }
-    
-    # Check manipulation flags
-    if manipulation_flags:
-        high_severity = [f for f in manipulation_flags if f['severity'] > 0.6]
-        if high_severity and manipulation_tolerance < 0.3:
-            recommendation["action"] = "REJECT"
-            recommendation["reasoning"].append(
-                f"🚫 This listing shows {len(high_severity)} serious manipulation tactics"
-            )
-            recommendation["reasoning"].append(
-                "Your glyph profile indicates low tolerance for this behavior"
-            )
-    
-    # Check geographic alternatives
-    if geo_results:
-        best_deal = min(geo_results, key=lambda x: x['in_store'])
-        current_price = product.get('price', 999)
-        
-        if best_deal['in_store'] < current_price * 0.8:  # 20% savings threshold
-            savings = current_price - best_deal['in_store']
-            recommendation["alternatives"].append({
-                "type": "GEOGRAPHIC",
-                "description": f"In-store at {best_deal['region']}: ${best_deal['in_store']}",
-                "savings": f"${savings:.2f}"
-            })
-    
-    # Check DIY viability
-    if diy_viability > 0.7 and product.get('price', 0) > 15:
-        recommendation["alternatives"].append({
-            "type": "DIY",
-            "description": "Consider making/repairing instead",
-            "note": "High DIY viability in your glyph profile"
-        })
-    
-    # Default action if not rejected
-    if not recommendation["action"]:
-        if manipulation_flags and manipulation_tolerance < 0.5:
-            recommendation["action"] = "PROCEED_WITH_CAUTION"
-        else:
-            recommendation["action"] = "EVALUATE_ALTERNATIVES"
-    
-    return recommendation
+from recommendation_engine import generate_recommendation
 
 def main():
     print("=" * 60)
