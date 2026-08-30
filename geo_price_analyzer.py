@@ -1,4 +1,5 @@
 from glyph_engine import Glyph
+from price_sources import MockPriceSource
 
 # Fallbacks used when a glyph profile is missing a key, so analysis degrades
 # gracefully instead of crashing on a None comparison.
@@ -8,19 +9,16 @@ DEFAULT_DELIVERY_FEASIBILITY = 1.0
 
 
 class GeoPriceAnalyzer:
-    def __init__(self, glyph: Glyph):
+    def __init__(self, glyph: Glyph, price_source=None):
         self.glyph = glyph
+        self.price_source = price_source or MockPriceSource()
 
     def fetch_mock_prices(self, product_name, zip_code):
-        # Mock data; in the future this will query real APIs.
-        return {
-            "90301": {"in_store": 8.99, "online": 10.49, "distance": 2.1},
-            "90210": {"in_store": 7.75, "online": 9.99, "distance": 7.5},
-            "90001": {"in_store": 9.25, "online": 9.25, "distance": 0.3}
-        }
+        """Deprecated alias — use `self.price_source.regional_prices()`."""
+        return self.price_source.regional_prices(product_name, zip_code)
 
     def analyze_prices(self, product_name, user_zip="90001"):
-        regional_data = self.fetch_mock_prices(product_name, user_zip)
+        regional_data = self.price_source.regional_prices(product_name, user_zip)
         user_urgency = self.glyph.get_value("urgency", DEFAULT_URGENCY)
         budget_flex = self.glyph.get_value("budget_flex", DEFAULT_BUDGET_FLEX)
         delivery_ok = self.glyph.get_value("delivery_feasibility",

@@ -111,6 +111,88 @@ def test_diy_lookup_known_and_unknown():
     assert "No DIY knowledge" in out, "Should say nothing was found"
 
 
+PRODUCT_PAGE = """
+<html><head><script type="application/ld+json">
+{"@type":"Product","name":"Scraped Bulb","description":"LIMITED TIME! Only 3 left!",
+ "offers":{"@type":"Offer","price":"24.99","priceCurrency":"USD"}}
+</script></head></html>
+"""
+
+
+class _StubLiveSource:
+    """Replaces LivePriceSource so CLI tests never touch the network."""
+
+    def __init__(self, offer):
+        self.offer = offer
+
+    def __call__(self, *args, **kwargs):
+        return self
+
+    def fetch_offer(self, url):
+        result = dict(self.offer)
+        result.setdefault("url", url)
+        return result
+
+
+def with_stub_source(offer, argv):
+    original = cli.LivePriceSource
+    cli.LivePriceSource = _StubLiveSource(offer)
+    try:
+        return run(argv)
+    finally:
+        cli.LivePriceSource = original
+
+
+def test_analyze_url_runs_pipeline_on_scraped_data():
+    from price_extractor import extract_offer
+    offer = extract_offer(PRODUCT_PAGE, url="https://shop.test/bulb")
+    code, out = with_stub_source(offer, ["analyze", "--url", "https://shop.test/bulb"])
+    assert code == 0, "A scraped listing should analyze cleanly"
+    assert "Scraped Bulb" in out, "Should use the scraped product name"
+    assert "FAKE_URGENCY" in out, "Should scan the scraped description"
+    assert "live, via json-ld" in out, "Should mark the price as live"
+
+
+def test_analyze_url_reports_robots_denial():
+    offer = {"price": None, "error": "robots_denied", "detail": "denied"}
+    stderr = io.StringIO()
+    with contextlib.redirect_stderr(stderr):
+        code, _ = with_stub_source(offer, ["analyze", "--url", "https://shop.test/x"])
+    assert code == 2, "A robots denial should exit non-zero"
+    message = stderr.getvalue()
+    assert "robots.txt disallows" in message, "Should explain the refusal"
+    assert "does not work around that" in message, "Should not offer a bypass"
+
+
+def test_analyze_url_reports_fetch_failure():
+    offer = {"price": None, "error": "fetch_failed", "detail": "HTTP 500"}
+    stderr = io.StringIO()
+    with contextlib.redirect_stderr(stderr):
+        code, _ = with_stub_source(offer, ["analyze", "--url", "https://shop.test/x"])
+    assert code == 2, "A failed fetch should exit non-zero"
+    assert "Could not fetch" in stderr.getvalue(), "Should report the failure"
+
+
+def test_flags_override_scraped_values():
+    from price_extractor import extract_offer
+    offer = extract_offer(PRODUCT_PAGE, url="https://shop.test/bulb")
+    code, out = with_stub_source(offer, ["--json", "analyze", "--url",
+                                         "https://shop.test/bulb", "--price", "9.99"])
+    payload = json.loads(out)
+    assert payload["product"]["price"] == 9.99, "An explicit --price should win"
+    assert payload["product"]["name"] == "Scraped Bulb", "Unset fields stay scraped"
+
+
+def test_url_without_price_does_not_become_free():
+    offer = {"name": "Mystery", "price": None, "error": "no_structured_price",
+             "detail": "unknown", "description": ""}
+    stderr = io.StringIO()
+    with contextlib.redirect_stderr(stderr):
+        code, out = with_stub_source(offer, ["analyze", "--url", "https://shop.test/m"])
+    assert code == 0, "A missing price should still analyze"
+    assert "Price: unknown" in out, "Must show unknown, never $0"
+
+
 def test_bare_invocation_shows_help():
     code, out = run([])
     assert code == 0, "Bare invocation should succeed"

@@ -1,5 +1,13 @@
-# Currently only standard library is used.
-# Future additions:
-# requests  # for real scraping
-# beautifulsoup4  # for HTML parsing
-# playwright  # for JS-heavy sites
+# GlyphAI runs on the Python standard library. There is nothing to install.
+#
+# Live price fetching (`python cli.py analyze --url ...`) is built on urllib,
+# html.parser, json and urllib.robotparser — all stdlib. Prices are read from
+# the structured data sites publish for machines (JSON-LD / microdata / meta
+# tags), which needs no HTML-soup parser.
+#
+# Optional, only if you extend the extractor with CSS-selector scraping for
+# sites that publish no structured data:
+#
+# requests          # nicer HTTP than urllib; not required
+# beautifulsoup4    # CSS selectors over messy HTML; not required
+# playwright        # only for JS-rendered pages; heavy, not required

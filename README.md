@@ -75,6 +75,33 @@ Verdict: REJECT
 The verdict is one of `REJECT`, `PROCEED_WITH_CAUTION`, or `EVALUATE_ALTERNATIVES` —
 decided by *your* thresholds, not a vendor's.
 
+**3. Or point it at a real product page.**
+
+```bash
+python cli.py analyze --url https://example.com/some-product --cache-dir .cache
+```
+
+GlyphAI reads the structured data the page publishes for machines (JSON-LD,
+microdata, price meta tags), so it gets the real name, price, availability and
+description — then runs the same value-aligned analysis over them.
+
+### How it behaves on the open web
+
+GlyphAI fights manipulation, so its own crawler does not get to be
+manipulative. It:
+
+- **obeys `robots.txt`**, including `Crawl-delay`
+- **rate-limits itself** per host and **caches** pages so re-runs don't re-hit a site
+- **identifies itself honestly** in the User-Agent
+- **always sets a timeout** and caps response size
+
+There is deliberately **no way to bypass a site's `robots.txt`** — no override
+flag, no user-agent rotation, no proxy pools. If a site says no, GlyphAI stops
+and tells you to analyze it by hand. That's a feature.
+
+If a page publishes no structured price, GlyphAI reports the price as
+**unknown** — never as free.
+
 ### Other commands
 
 ```bash
@@ -85,8 +112,10 @@ python cli.py diy --name "60W LED Bulb"                # DIY alternatives for an
 python cli.py --help                                   # everything else
 ```
 
-Prices are currently **mock data** — the analysis pipeline is real, the price
-feed is not yet. See ROADMAP.md.
+**Regional in-store pricing is still mock data.** A single product URL can't
+tell you what three ZIP codes charge in store; that needs per-vendor inventory
+APIs. GlyphAI labels those numbers as mock rather than inventing them. See
+ROADMAP.md.
 
 ### Examples and tests
 

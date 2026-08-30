@@ -5,8 +5,15 @@
 - [x] Manipulation detection library
 
 ## Phase 1: MVP (Someone Picks This Up)
-- [ ] Real price scraping (3-5 major vendors) — **blocked:** needs external
-      dependencies (`requests`/`beautifulsoup4`); everything else is stdlib
+- [x] Real price fetching — `cli.py analyze --url` reads live pages via
+      JSON-LD / microdata / meta tags, with a robots-respecting fetcher.
+      Still stdlib-only; no scraping dependencies were needed.
+- [ ] Per-vendor coverage (3-5 major vendors) — the generic structured-data
+      reader works on any site that publishes schema.org markup. Sites that
+      render prices only in styled HTML, or that disallow crawling, need
+      either a per-vendor adapter or manual entry.
+- [ ] Regional in-store pricing — needs per-vendor store-inventory APIs;
+      currently mock and labelled as such
 - [ ] Price history tracking
 - [x] CLI interface (`python cli.py analyze|profile|diy`)
 - [x] Basic DIY fallback — `diy_knowledge.json` is loaded and matched by

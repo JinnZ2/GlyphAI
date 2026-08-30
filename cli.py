@@ -23,23 +23,65 @@ from geo_price_analyzer import GeoPriceAnalyzer
 from recommendation_engine import RecommendationEngine
 from bot_network_interface import JibbelinkNegotiator
 from diy_knowledge import DIYKnowledge
+from price_sources import LivePriceSource
 
 DEFAULT_ZIP = "90001"
 
 
+def fetch_listing_from_url(url, cache_dir=None):
+    """Fetch a real product page. Returns (listing, error_message)."""
+    source = LivePriceSource(cache_dir=cache_dir)
+    offer = source.fetch_offer(url)
+
+    if offer.get("error") == "robots_denied":
+        return None, (
+            f"{url}\n  robots.txt disallows automated access to this page.\n"
+            "  GlyphAI does not work around that. Analyze it manually with "
+            "--name/--price instead.")
+    if offer.get("error") == "fetch_failed":
+        return None, f"Could not fetch {url}\n  {offer.get('detail', '')}"
+
+    listing = {"url": url}
+    for key in ("name", "description"):
+        if offer.get(key):
+            listing[key] = offer[key]
+    if offer.get("price") is not None:
+        listing["price"] = offer["price"]
+    if offer.get("currency"):
+        listing["currency"] = offer["currency"]
+    if offer.get("availability"):
+        listing["availability"] = offer["availability"]
+    listing["price_source"] = offer.get("source")
+
+    if offer.get("error") == "no_structured_price":
+        sys.stderr.write(
+            f"Note: no structured price found on {url}. "
+            "Price is unknown; pass --price to supply it.\n")
+    return listing, None
+
+
 def build_listing(args):
-    """Assemble a listing dict from --file and/or individual flags."""
+    """Assemble a listing dict from --url, --file and/or individual flags."""
     listing = {}
+
+    if getattr(args, 'url', None):
+        fetched, error = fetch_listing_from_url(args.url, args.cache_dir)
+        if error:
+            sys.stderr.write(error + "\n")
+            return None
+        listing.update(fetched)
+
     if args.file:
         try:
             with open(args.file, 'r') as handle:
-                listing = json.load(handle)
+                from_file = json.load(handle)
         except Exception as e:
             sys.stderr.write(f"Could not read listing file: {e}\n")
             return None
-        if not isinstance(listing, dict):
+        if not isinstance(from_file, dict):
             sys.stderr.write("Listing file must contain a JSON object.\n")
             return None
+        listing.update(from_file)
 
     # Explicit flags override anything loaded from the file.
     if args.name is not None:
@@ -110,9 +152,17 @@ def print_report(payload):
         line = f"Price: ${price}"
         if listing.get('was_price'):
             line += f" (was ${listing['was_price']})"
+        if listing.get('price_source'):
+            line += f"  [live, via {listing['price_source']}]"
         print(line)
+    elif listing.get('url'):
+        print("Price: unknown (no structured price data on the page)")
     if listing.get('vendor'):
         print(f"Vendor: {listing['vendor']}")
+    if listing.get('availability'):
+        print(f"Availability: {listing['availability']}")
+    if listing.get('url'):
+        print(f"URL: {listing['url']}")
 
     flags = payload["manipulation_flags"]
     print(f"\nManipulation scan: {len(flags)} flag(s)")
@@ -121,7 +171,7 @@ def print_report(payload):
     if not flags:
         print("  No manipulation patterns detected.")
 
-    print("\nRegional pricing:")
+    print("\nRegional pricing (mock data — see ROADMAP.md):")
     for row in payload["geo_analysis"]:
         local = " (local)" if row.get("is_local") else ""
         print(f"  {row['region']}{local}: in-store ${row['in_store']} | "
@@ -204,6 +254,10 @@ def build_parser():
     analyze_parser.add_argument('--vendor', help="Vendor name")
     analyze_parser.add_argument('--product-id', dest='product_id', help="SKU or product id")
     analyze_parser.add_argument('--file', help="JSON file containing the listing")
+    analyze_parser.add_argument('--url',
+                                help="Fetch a real product page (obeys robots.txt)")
+    analyze_parser.add_argument('--cache-dir', dest='cache_dir', default=None,
+                                help="Directory for caching fetched pages")
     analyze_parser.add_argument('--zip', default=DEFAULT_ZIP, help="Your ZIP code")
     analyze_parser.add_argument('--negotiate', action='store_true',
                                 help="Also generate a Jibbelink OFFER message")
