@@ -17,13 +17,19 @@ GlyphAI is a value-aligned, negotiation-aware AI assistant that protects user in
 
 ```
 GlyphAI/
+├── cli.py                     # Command line entry point (analyze / profile / diy)
 ├── glyph_engine.py            # Glyph class — loads user value profile from JSON
 ├── ManipulationDetector.py    # Detects dark patterns (fake urgency, suspicious discounts, subscription traps)
 ├── geo_price_analyzer.py      # Geographic price comparison with mock data
+├── price_sources.py           # MockPriceSource / LivePriceSource behind one seam
+├── web_fetch.py               # PoliteFetcher — robots.txt, rate limit, cache
+├── price_extractor.py         # Reads JSON-LD / microdata / meta price data
+├── recommendation_engine.py   # RecommendationEngine — the evaluation engine (verdicts)
+├── diy_knowledge.py           # DIYKnowledge — loads and matches diy_knowledge.json
 ├── bot_network_interface.py   # JibbelinkNegotiator — bot-to-bot negotiation protocol
 ├── scheduler.py               # Simple infinite-loop task runner (60s interval)
 ├── glyph_profile.json         # User values definition (urgency, budget, ethics, etc.)
-├── diy_knowledge.json         # DIY fallback data — STUB: no code reads this yet
+├── diy_knowledge.json         # DIY alternatives + repair notes, keyed by product terms
 ├── jibbelink_format.md        # Jibbelink protocol message format spec
 ├── JibbelinkSecurity.md       # Security framework (SHA256 signatures) — spec only, unimplemented
 ├── requirements.txt           # All commented out; stdlib-only today
@@ -32,8 +38,15 @@ GlyphAI/
 │   ├── demo.py                # Full end-to-end demo of all features
 │   └── lightbulb_scenario.py  # Single-product use case example
 ├── tests/
+│   ├── run_all.py                     # Runs every test_*.py module
 │   ├── test_manipulation_detector.py  # Detection rule tests
-│   └── test_glyph_engine.py           # Profile loading + analyzer robustness tests
+│   ├── test_glyph_engine.py           # Profile loading + analyzer robustness tests
+│   ├── test_recommendation_engine.py  # Verdict logic + DIY sourcing
+│   ├── test_diy_knowledge.py          # Knowledge lookup + matching
+│   ├── test_price_extractor.py        # JSON-LD / microdata / meta extraction
+│   ├── test_web_fetch.py              # robots, rate limiting, caching
+│   ├── test_price_sources.py          # Mock vs live source behaviour
+│   └── test_cli.py                    # CLI behaviour and output contracts
 ├── README.md
 ├── ARCHITECTURE.md            # System design documentation
 ├── ROADMAP.md                 # Development roadmap
@@ -51,18 +64,36 @@ The system follows a value-driven decision pipeline:
 4. **Negotiation Layer** (`bot_network_interface.py`) — Creates Jibbelink protocol messages for bot-to-bot negotiation.
 5. **Scheduling** (`scheduler.py`) — Runs analysis tasks on a loop.
 
+The pipeline is wired end to end by `cli.py`, which is the reference caller: glyph → detector → geo → engine → (optional) negotiator.
+
 ### Known structural gaps
 
 Be aware of these before extending the system:
 
-- **The decision engine lives in an example.** `generate_recommendation()` — which combines flags, geo results, and glyph values into a REJECT / PROCEED_WITH_CAUTION / EVALUATE_ALTERNATIVES verdict — is defined in `examples/demo.py`, not in any importable module. ARCHITECTURE.md calls this the "Evaluation Engine." Anything else needing that logic currently cannot import it; promoting it into a core module is a natural next step.
-- **`diy_knowledge.json` is orphaned.** No module loads it, despite `DIY_viability` being a glyph value that drives recommendations. The DIY fallback is suggested generically, never sourced from this file.
+- **Regional in-store pricing is still mock.** `MockPriceSource` returns the same three ZIP codes regardless of product or ZIP; `user_zip` only marks which region is `is_local`. Live fetching (`--url`) reads a *single real product page*; it cannot know in-store prices in three ZIP codes, and `LivePriceSource.regional_prices()` deliberately delegates to the mock rather than fabricating them. Real regional data needs per-vendor store-inventory APIs.
+- **Live extraction only reads structured data.** `price_extractor` handles JSON-LD, microdata and price meta tags. Sites that render prices only in styled markup return `price: None`, which means *unknown* — never treat it as free or as zero. `test_missing_price_is_none_not_zero` guards this.
+- **Live fetching is unverified against real retailers.** It is tested against a local HTTP server and injected transports; no external site was reachable from the development sandbox. Expect per-site surprises (JS-rendered prices, bot walls) on first real use.
 - **Jibbelink security is unimplemented.** `JibbelinkSecurity.md` specifies SHA256 signing, but `create_message()` emits unsigned messages with a hardcoded `confidence` of 0.95.
-- **Geo data is fully mocked.** `fetch_mock_prices()` returns the same three ZIP codes regardless of the `product_name` or `zip_code` passed in; `user_zip` only marks which region is `is_local`.
+- **`ethical_threshold` has no data source.** It is a glyph value with real weight in the user's profile (0.8), but listings carry no sourcing/labor data to compare it against, so no rule consumes it. It was previously read and silently discarded in the recommendation logic. Wiring it up requires a vendor-ethics data source, not just a new rule.
+- **`diy_knowledge.json` is thin.** Matching and loading work, but the file holds a single entry (`led_bulb`). It grows by adding entries, not code. Do not invent repair facts to pad it.
 
 ## Key Commands
 
 ```bash
+# Analyze a listing (the primary entry point)
+python cli.py analyze --name "60W LED Bulb 4-Pack" --price 24.99 --was-price 49.99 \
+    --description "LIMITED TIME! Only 3 left!"
+
+# Analyze a real product page (obeys robots.txt; caching recommended)
+python cli.py analyze --url https://example.com/product --cache-dir .cache
+
+# Machine-readable output, safe to pipe
+python cli.py --json analyze --file listing.json
+
+# Inspect the active profile / look up DIY options
+python cli.py profile --verbose
+python cli.py diy --name "60W LED Bulb"
+
 # Run the full demo
 python examples/demo.py
 
@@ -72,9 +103,8 @@ python examples/lightbulb_scenario.py
 # Run the scheduler (infinite loop, 60s intervals)
 python scheduler.py
 
-# Run tests
-python tests/test_manipulation_detector.py
-python tests/test_glyph_engine.py
+# Run all tests (or run any single test file directly)
+python tests/run_all.py
 ```
 
 Examples and the scheduler resolve `glyph_profile.json` relative to the repo, so they can be run from any working directory.
@@ -104,6 +134,32 @@ Examples and the scheduler resolve `glyph_profile.json` relative to the repo, so
 - `analyze_prices(product_name, user_zip="90001")` → one dict per region with `region`, `in_store`, `online`, `distance_miles`, `price_gap`, `is_local`, `suggestion`.
 - Module constants `DEFAULT_URGENCY`, `DEFAULT_BUDGET_FLEX`, `DEFAULT_DELIVERY_FEASIBILITY` back the glyph lookups so a sparse profile degrades instead of crashing.
 
+**`PoliteFetcher`** (`web_fetch.py`)
+- `fetch(url)` → page text; raises `RobotsDenied` or `FetchError`. `can_fetch(url)`, `crawl_delay(url)`.
+- Constructor takes `transport`, `sleep` and `clock` — inject these in tests so they never touch the network or actually sleep (see `tests/test_web_fetch.py`).
+- A 5xx on `robots.txt` is treated as denial, a 404 as "no restrictions".
+
+**`price_extractor`** (`price_extractor.py`)
+- `extract_offer(html, url=None)` → `{name, price, currency, availability, description, source, url}`. `source` names which strategy won (`json-ld`, `microdata`, `meta`).
+- `parse_price()` handles `$1,299.00` and `1.299,00`; returns `None` for anything unparseable.
+
+**`MockPriceSource` / `LivePriceSource`** (`price_sources.py`)
+- Both expose `regional_prices(product_name, zip_code)`; `LivePriceSource` adds `fetch_offer(url)`.
+- `fetch_offer` never raises — failures come back as `error` (`robots_denied`, `fetch_failed`, `no_structured_price`) so one bad vendor cannot abort a run.
+- `is_live` marks whether numbers are real. `GeoPriceAnalyzer(glyph, price_source=None)` defaults to the mock, so existing behaviour is unchanged.
+
+**`RecommendationEngine`** (`recommendation_engine.py`)
+- `RecommendationEngine(glyph, diy_knowledge=None)`; `recommend(product, manipulation_flags=None, geo_results=None)` → `{"action", "reasoning", "alternatives"}`.
+- `action` is one of `REJECT`, `PROCEED_WITH_CAUTION`, `EVALUATE_ALTERNATIVES`.
+- Thresholds are class attributes (`HIGH_SEVERITY`, `REJECT_TOLERANCE`, `CAUTION_TOLERANCE`, `GEO_SAVINGS_RATIO`, `DIY_VIABILITY_FLOOR`, `DIY_PRICE_FLOOR`) — tune these rather than editing conditionals.
+- `generate_recommendation(glyph, product, flags, geo)` is a functional wrapper kept for the original demo call site.
+- Injecting `diy_knowledge` is how tests substitute a knowledge base; it defaults to the real one.
+
+**`DIYKnowledge`** (`diy_knowledge.py`)
+- `lookup(product_name)` → entry dict plus `matched_key`, or `None`. `alternatives(name)` → list, `repair_note(name)` → str, `list_keys()`.
+- Matching is token-based: every underscore-separated term in a key must appear in the product name, so `led_bulb` matches `"60W LED Bulb 4-Pack"` but not `"bulb"`. The most specific match wins.
+- `lookup()` returns a copy — mutating it will not corrupt the loaded knowledge.
+
 **`JibbelinkNegotiator`** (`bot_network_interface.py`)
 - `create_message(msg_type, product_id, price, recipient="VENDOR_BOT")` → message dict, also appended to `self.transcript`.
 - `summarize_transcript()` → list of human-readable strings.
@@ -127,4 +183,8 @@ Examples and the scheduler resolve `glyph_profile.json` relative to the repo, so
 - When adding new Jibbelink message types, follow the spec in `jibbelink_format.md` and security requirements in `JibbelinkSecurity.md`.
 - Test new functionality by adding assertion-based tests in `tests/`.
 - **Keep file access cwd-independent.** Resolve data files relative to the module (see `DEFAULT_PROFILE`), never against the caller's working directory. Verify by running the examples and tests from outside the repo root.
+- **The crawler stays polite — this is a values constraint, not a style one.** `web_fetch.PoliteFetcher` obeys robots.txt (including `Crawl-delay`), rate-limits per host, identifies itself honestly, caps response size, and always sets a timeout. Do **not** add user-agent rotation, proxy pools, CAPTCHA solving, or a `--ignore-robots` flag. A project that exists to resist manipulation does not get to manipulate. When a site says no, `RobotsDenied` is the correct outcome and the CLI tells the user to analyze it manually.
+- **A missing price is `None`, not `0`.** Anything reading extractor output must treat `None` as unknown. Defaulting it to zero would make free-looking listings sail through the engine.
+- **Diagnostics go to stderr, never stdout.** `cli.py --json` must emit only JSON on stdout so it can be piped. `Glyph.load_profile()` and `DIYKnowledge.load_knowledge()` print their status to `sys.stderr` for exactly this reason; `test_json_stdout_is_not_polluted_by_diagnostics` guards it.
+- **Decision logic belongs in `recommendation_engine.py`,** not in examples or the CLI. `cli.py` only orchestrates and formats.
 - **Watch for silently-skipped logic.** Because `Glyph.load_profile()` swallows errors and the detector uses `.get()` throughout, a mismatched key produces no exception — the rule just never fires. When adding a rule, add a test proving it fires on data shaped the way the examples actually emit it.

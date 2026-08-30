@@ -41,27 +41,87 @@ MIT License. Use it. Fork it. Make it weirder. But don’t sell it out. GlyphAI 
 
 ## Quick Start
 
-GlyphAI currently runs on the Python standard library alone — there is nothing to install.
+GlyphAI runs on the Python standard library alone — there is nothing to install.
 
-1. Edit `glyph_profile.json` with your values
-2. Run the demo: `python examples/demo.py`
+**1. Set your values.** Edit `glyph_profile.json` (every value is 0–1).
 
-You should see:
-- Manipulation detection in action
-- Geographic price comparison
-- Value-aligned recommendation
-- Jibbelink protocol message generation
-
-Other entry points:
+**2. Analyze a listing.**
 
 ```bash
-python examples/lightbulb_scenario.py   # single-product example
-python scheduler.py                     # runs analysis on a 60s loop (Ctrl-C to stop)
+python cli.py analyze \
+    --name "60W LED Bulb 4-Pack" --price 24.99 --was-price 49.99 \
+    --description "LIMITED TIME OFFER! Only 3 left in stock! Subscribe and save 15%!"
 ```
 
-Run the tests with:
+```
+Manipulation scan: 3 flag(s)
+  [0.7] FAKE_URGENCY: Uses time-pressure language without evidence
+  [0.6] SUSPICIOUS_DISCOUNT: 50% off may indicate inflated 'original' price
+  [0.5] SUBSCRIPTION_TRAP: May include recurring charges
+
+Verdict: REJECT
+  - This listing shows 1 serious manipulation tactic
+  - Your glyph profile indicates low tolerance for this behavior
+
+  Alternative (GEOGRAPHIC): In-store at 90210: $7.75
+    Saves $17.24
+
+  Alternative (DIY): Known DIY options for this item
+    * Check local Buy Nothing groups
+    * Habitat for Humanity ReStore often has lighting
+    Repair: Most LED failures are driver board, not LEDs - replaceable
+```
+
+The verdict is one of `REJECT`, `PROCEED_WITH_CAUTION`, or `EVALUATE_ALTERNATIVES` —
+decided by *your* thresholds, not a vendor's.
+
+**3. Or point it at a real product page.**
 
 ```bash
-python tests/test_manipulation_detector.py
-python tests/test_glyph_engine.py
+python cli.py analyze --url https://example.com/some-product --cache-dir .cache
+```
+
+GlyphAI reads the structured data the page publishes for machines (JSON-LD,
+microdata, price meta tags), so it gets the real name, price, availability and
+description — then runs the same value-aligned analysis over them.
+
+### How it behaves on the open web
+
+GlyphAI fights manipulation, so its own crawler does not get to be
+manipulative. It:
+
+- **obeys `robots.txt`**, including `Crawl-delay`
+- **rate-limits itself** per host and **caches** pages so re-runs don't re-hit a site
+- **identifies itself honestly** in the User-Agent
+- **always sets a timeout** and caps response size
+
+There is deliberately **no way to bypass a site's `robots.txt`** — no override
+flag, no user-agent rotation, no proxy pools. If a site says no, GlyphAI stops
+and tells you to analyze it by hand. That's a feature.
+
+If a page publishes no structured price, GlyphAI reports the price as
+**unknown** — never as free.
+
+### Other commands
+
+```bash
+python cli.py analyze --file listing.json --negotiate  # from a JSON file, + Jibbelink offer
+python cli.py --json analyze --name "..." --price 20   # machine-readable, safe to pipe
+python cli.py profile --verbose                        # show your active values
+python cli.py diy --name "60W LED Bulb"                # DIY alternatives for an item
+python cli.py --help                                   # everything else
+```
+
+**Regional in-store pricing is still mock data.** A single product URL can't
+tell you what three ZIP codes charge in store; that needs per-vendor inventory
+APIs. GlyphAI labels those numbers as mock rather than inventing them. See
+ROADMAP.md.
+
+### Examples and tests
+
+```bash
+python examples/demo.py                 # full annotated walkthrough
+python examples/lightbulb_scenario.py   # single-product example
+python scheduler.py                     # analysis on a 60s loop (Ctrl-C to stop)
+python tests/run_all.py                 # run the whole test suite
 ```
