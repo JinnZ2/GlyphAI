@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from glyph_engine import Glyph
 from recommendation_engine import RecommendationEngine, generate_recommendation
 from diy_knowledge import DIYKnowledge
+from decision_model import Decision
 
 SERIOUS_FLAG = {"type": "FAKE_URGENCY", "severity": 0.7, "evidence": "x"}
 MILD_FLAG = {"type": "SUBSCRIPTION_TRAP", "severity": 0.5, "evidence": "x"}
@@ -77,6 +78,75 @@ def test_geographic_alternative_does_not_infer_observed_provenance():
     assert "source_kind" in geo_alt, "Alternative shape must include provenance"
     assert geo_alt["source_kind"] is None, \
         "Missing provenance must remain unknown, never inferred as observed"
+
+
+def test_recommend_decision_converts_geographic_provenance_to_evidence():
+    engine = RecommendationEngine(Glyph())
+    decision = engine.recommend_decision(
+        {"name": "widget", "price": 24.99}, [], GEO)
+    assert isinstance(decision, Decision)
+    assert len(decision.evidence) == 1
+    assert decision.evidence[0].source == "GeoPriceAnalyzer"
+    assert decision.evidence[0].source_kind == "mock"
+    assert decision.evidence[0].supporting_data["region"] == "90210"
+    assert decision.alternatives[0]["source_kind"] == \
+        decision.evidence[0].source_kind
+
+
+def test_recommend_decision_keeps_missing_provenance_unknown():
+    engine = RecommendationEngine(Glyph())
+    unlabelled_geo = [dict(GEO[0])]
+    del unlabelled_geo[0]["source_kind"]
+    decision = engine.recommend_decision(
+        {"name": "widget", "price": 24.99}, [], unlabelled_geo)
+    assert decision.evidence[0].source_kind is None
+    assert decision.alternatives[0]["source_kind"] is None
+    assert decision.warnings, "Unknown provenance should be explicit"
+    assert decision.missing_information, "Unknown provenance should be recorded"
+
+
+def test_recommend_decision_treats_invalid_provenance_as_unknown():
+    engine = RecommendationEngine(Glyph())
+    invalid_geo = [dict(GEO[0], source_kind="fabricated")]
+    decision = engine.recommend_decision(
+        {"name": "widget", "price": 24.99}, [], invalid_geo)
+    assert decision.evidence[0].source_kind is None
+    assert decision.alternatives[0]["source_kind"] is None
+    assert decision.warnings and decision.missing_information
+
+
+def test_recommend_decision_treats_invalid_confidence_as_unknown():
+    engine = RecommendationEngine(Glyph())
+    invalid_confidence_geo = [dict(GEO[0], confidence=float("nan"))]
+    decision = engine.recommend_decision(
+        {"name": "widget", "price": 24.99}, [], invalid_confidence_geo)
+    assert decision.evidence[0].confidence is None, \
+        "Invalid confidence must not become non-standard JSON"
+
+
+def test_recommend_accepts_one_shot_geographic_iterable():
+    engine = RecommendationEngine(Glyph())
+    result = engine.recommend(
+        {"name": "widget", "price": 24.99}, [], (row for row in GEO))
+    assert result["alternatives"][0]["type"] == "GEOGRAPHIC", \
+        "Typed evidence conversion must not consume generator input twice"
+
+
+def test_legacy_recommendation_shape_and_behavior_are_unchanged():
+    engine = RecommendationEngine(Glyph())
+    legacy = engine.recommend(
+        {"name": "widget", "price": 24.99}, [SERIOUS_FLAG], GEO)
+    typed = engine.recommend_decision(
+        {"name": "widget", "price": 24.99}, [SERIOUS_FLAG], GEO)
+    assert legacy == typed.to_legacy_dict()
+    assert set(legacy) == {"action", "reasoning", "alternatives"}
+    assert legacy["action"] == "REJECT"
+    assert legacy["alternatives"][0] == {
+        "type": "GEOGRAPHIC",
+        "description": "In-store at 90210: $7.75",
+        "savings": "$17.24",
+        "source_kind": "mock",
+    }
 
 
 def test_geo_alternative_skipped_when_savings_too_small():

@@ -11,17 +11,10 @@ about scope: it reports what a page actually says, and `is_live` marks which
 numbers are real.
 """
 
+from decision_model import (SOURCE_KINDS, SOURCE_KIND_DERIVED,
+                            SOURCE_KIND_MOCK, SOURCE_KIND_OBSERVED)
 from price_extractor import extract_offer
 from web_fetch import PoliteFetcher, FetchError, RobotsDenied
-
-SOURCE_KIND_MOCK = "mock"
-SOURCE_KIND_OBSERVED = "observed"
-SOURCE_KIND_DERIVED = "derived"
-SOURCE_KINDS = frozenset({
-    SOURCE_KIND_MOCK,
-    SOURCE_KIND_OBSERVED,
-    SOURCE_KIND_DERIVED,
-})
 
 MOCK_REGIONS = {
     "90301": {"in_store": 8.99, "online": 10.49, "distance": 2.1},

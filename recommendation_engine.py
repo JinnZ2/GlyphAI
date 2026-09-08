@@ -1,3 +1,5 @@
+from decision_model import (Decision, Evidence, normalize_confidence,
+                            normalize_source_kind)
 from diy_knowledge import DIYKnowledge
 
 # Fallbacks so a sparse or failed-to-load glyph degrades instead of crashing.
@@ -31,8 +33,19 @@ class RecommendationEngine:
         self.diy = diy_knowledge if diy_knowledge is not None else DIYKnowledge()
 
     def recommend(self, product, manipulation_flags=None, geo_results=None):
+        """Return the historical dictionary result used by the CLI and callers."""
+        return self.recommend_decision(
+            product, manipulation_flags, geo_results).to_legacy_dict()
+
+    def recommend_decision(self, product, manipulation_flags=None,
+                           geo_results=None):
+        """Return a typed Decision without changing legacy verdict behavior."""
         manipulation_flags = manipulation_flags or []
-        geo_results = geo_results or []
+        geo_results = list(geo_results or [])
+        geographic_evidence = [
+            self._geographic_evidence(product, result)
+            for result in geo_results
+        ]
 
         tolerance = self.glyph.get_value('manipulation_tolerance',
                                          DEFAULT_MANIPULATION_TOLERANCE)
@@ -59,7 +72,9 @@ class RecommendationEngine:
 
         # Geographic alternative
         if geo_results:
-            best_deal = min(geo_results, key=lambda x: x['in_store'])
+            best_index, best_deal = min(
+                enumerate(geo_results), key=lambda item: item[1]['in_store'])
+            best_evidence = geographic_evidence[best_index]
             current_price = product.get('price', product.get('now_price'))
             if current_price is not None and \
                     best_deal['in_store'] < current_price * self.GEO_SAVINGS_RATIO:
@@ -69,7 +84,7 @@ class RecommendationEngine:
                     "description": "In-store at {}: ${}".format(
                         best_deal['region'], best_deal['in_store']),
                     "savings": "${:.2f}".format(savings),
-                    "source_kind": best_deal.get("source_kind")
+                    "source_kind": best_evidence.source_kind
                 })
 
         # DIY alternative, sourced from diy_knowledge.json when the product is known
@@ -98,7 +113,44 @@ class RecommendationEngine:
             else:
                 recommendation["action"] = "EVALUATE_ALTERNATIVES"
 
-        return recommendation
+        unknown_regions = [
+            result.get("region", "unknown")
+            for result, evidence in zip(geo_results, geographic_evidence)
+            if evidence.source_kind is None
+        ]
+        warnings = []
+        missing_information = []
+        if unknown_regions:
+            warnings.append("Some geographic price evidence has unknown provenance")
+            missing_information.append(
+                "Geographic price provenance for region(s): {}".format(
+                    ", ".join(str(region) for region in unknown_regions)))
+
+        return Decision.from_recommendation(
+            recommendation,
+            warnings=warnings,
+            evidence=geographic_evidence,
+            missing_information=missing_information,
+        )
+
+    @staticmethod
+    def _geographic_evidence(product, result):
+        """Convert one legacy geographic row into typed evidence."""
+        name = product.get("name", "product")
+        region = result.get("region", "unknown")
+        confidence = normalize_confidence(result.get("confidence"))
+        supporting_data = {
+            key: value for key, value in result.items()
+            if key not in {"source_kind", "confidence"}
+        }
+        return Evidence(
+            source="GeoPriceAnalyzer",
+            claim="In-store price for {} in {} is ${}".format(
+                name, region, result.get("in_store")),
+            source_kind=normalize_source_kind(result.get("source_kind")),
+            confidence=confidence,
+            supporting_data=supporting_data,
+        )
 
 
 def generate_recommendation(glyph, product, manipulation_flags, geo_results):
