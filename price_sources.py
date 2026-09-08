@@ -14,6 +14,15 @@ numbers are real.
 from price_extractor import extract_offer
 from web_fetch import PoliteFetcher, FetchError, RobotsDenied
 
+SOURCE_KIND_MOCK = "mock"
+SOURCE_KIND_OBSERVED = "observed"
+SOURCE_KIND_DERIVED = "derived"
+SOURCE_KINDS = frozenset({
+    SOURCE_KIND_MOCK,
+    SOURCE_KIND_OBSERVED,
+    SOURCE_KIND_DERIVED,
+})
+
 MOCK_REGIONS = {
     "90301": {"in_store": 8.99, "online": 10.49, "distance": 2.1},
     "90210": {"in_store": 7.75, "online": 9.99, "distance": 7.5},
@@ -27,7 +36,10 @@ class MockPriceSource:
     is_live = False
 
     def regional_prices(self, product_name, zip_code):
-        return {region: dict(info) for region, info in MOCK_REGIONS.items()}
+        return {
+            region: dict(info, source_kind=SOURCE_KIND_MOCK)
+            for region, info in MOCK_REGIONS.items()
+        }
 
 
 class LivePriceSource:

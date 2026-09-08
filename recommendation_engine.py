@@ -68,7 +68,8 @@ class RecommendationEngine:
                     "type": "GEOGRAPHIC",
                     "description": "In-store at {}: ${}".format(
                         best_deal['region'], best_deal['in_store']),
-                    "savings": "${:.2f}".format(savings)
+                    "savings": "${:.2f}".format(savings),
+                    "source_kind": best_deal.get("source_kind")
                 })
 
         # DIY alternative, sourced from diy_knowledge.json when the product is known

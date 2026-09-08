@@ -45,6 +45,7 @@ class GeoPriceAnalyzer:
                 "distance_miles": info["distance"],
                 "price_gap": price_gap,
                 "is_local": region == user_zip,
-                "suggestion": suggestion
+                "suggestion": suggestion,
+                "source_kind": info.get("source_kind")
             })
         return result
