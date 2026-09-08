@@ -2,7 +2,8 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from price_sources import MockPriceSource, LivePriceSource, get_source
+from price_sources import (MockPriceSource, LivePriceSource, get_source,
+                           SOURCE_KINDS, SOURCE_KIND_MOCK)
 from web_fetch import PoliteFetcher
 from glyph_engine import Glyph
 from geo_price_analyzer import GeoPriceAnalyzer
@@ -41,6 +42,15 @@ def test_mock_source_returns_all_regions():
     regions = MockPriceSource().regional_prices("widget", "90001")
     assert len(regions) == 3, "Mock should return the three regions"
     assert "in_store" in regions["90210"], "Region entries carry in-store prices"
+
+
+def test_mock_source_marks_every_region_as_mock():
+    assert SOURCE_KINDS == frozenset({"mock", "observed", "derived"}), \
+        "Provenance vocabulary should remain small and explicit"
+    regions = MockPriceSource().regional_prices("widget", "90001")
+    assert all(row["source_kind"] == SOURCE_KIND_MOCK
+               for row in regions.values()), \
+        "Every simulated regional price must be explicitly marked mock"
 
 
 def test_mock_source_returns_copies():
@@ -107,6 +117,23 @@ def test_analyzer_defaults_to_mock_and_accepts_injection():
     injected = GeoPriceAnalyzer(glyph, price_source=MockPriceSource())
     assert default_results == injected.analyze_prices("widget"), \
         "Default behaviour must be unchanged by the new seam"
+    assert all(row["source_kind"] == SOURCE_KIND_MOCK
+               for row in default_results), \
+        "Analyzer results must retain mock provenance"
+
+
+def test_analyzer_does_not_infer_observed_provenance():
+    class UnlabelledSource:
+        def regional_prices(self, product_name, zip_code):
+            return {
+                zip_code: {"in_store": 8.0, "online": 10.0, "distance": 1.0}
+            }
+
+    results = GeoPriceAnalyzer(
+        Glyph(), price_source=UnlabelledSource()).analyze_prices("widget")
+    assert "source_kind" in results[0], "Result shape must include provenance"
+    assert results[0]["source_kind"] is None, \
+        "Missing provenance must remain unknown, never inferred as observed"
 
 
 def test_deprecated_fetch_mock_prices_still_works():

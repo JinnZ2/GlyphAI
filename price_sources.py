@@ -11,6 +11,8 @@ about scope: it reports what a page actually says, and `is_live` marks which
 numbers are real.
 """
 
+from decision_model import (SOURCE_KINDS, SOURCE_KIND_DERIVED,
+                            SOURCE_KIND_MOCK, SOURCE_KIND_OBSERVED)
 from price_extractor import extract_offer
 from web_fetch import PoliteFetcher, FetchError, RobotsDenied
 
@@ -27,7 +29,10 @@ class MockPriceSource:
     is_live = False
 
     def regional_prices(self, product_name, zip_code):
-        return {region: dict(info) for region, info in MOCK_REGIONS.items()}
+        return {
+            region: dict(info, source_kind=SOURCE_KIND_MOCK)
+            for region, info in MOCK_REGIONS.items()
+        }
 
 
 class LivePriceSource:

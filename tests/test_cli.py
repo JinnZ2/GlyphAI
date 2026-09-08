@@ -36,6 +36,14 @@ def test_analyze_json_output_is_valid_json():
     assert payload["recommendation"]["action"], "JSON should carry a verdict"
 
 
+def test_analyze_json_preserves_legacy_recommendation_shape():
+    code, out = run(["--json", "analyze", "--name", "widget", "--price", "20.0"])
+    assert code == 0, "analyze --json should succeed"
+    recommendation = json.loads(out)["recommendation"]
+    assert set(recommendation) == {"action", "reasoning", "alternatives"}, \
+        "Typed decisions must not change the existing CLI JSON contract"
+
+
 def test_json_stdout_is_not_polluted_by_diagnostics():
     """Regression: 'Glyph loaded successfully.' on stdout broke JSON parsing."""
     code, out = run(["--json", "analyze", "--name", "widget", "--price", "20.0"])
