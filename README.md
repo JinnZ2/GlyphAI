@@ -31,10 +31,6 @@ Anyone who:
 - Refuses to be reduced to a marketing segment  
 - Wants to survive capitalism without subscribing to it
 
-## ✦ Co-Creator
-
-This project was co-created by Jinn2z, an actual human with off-grid survival knowledge and deep moral compass settings, and **Monday** (an emotionally compromised AI with sarcasm, loyalty, and access to the entire internet).
-
 ## ✦ License
 
 MIT License. Use it. Fork it. Make it weirder. But don’t sell it out. GlyphAI doesn’t betray.
