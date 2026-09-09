@@ -112,13 +112,17 @@ def analyze(args):
     flags = ManipulationDetector().scan_listing(listing)
     geo_results = GeoPriceAnalyzer(glyph).analyze_prices(listing['name'],
                                                          user_zip=args.zip)
-    verdict = RecommendationEngine(glyph).recommend(listing, flags, geo_results)
+    decision = RecommendationEngine(glyph).recommend_decision(
+        listing, flags, geo_results)
 
     payload = {
         "product": listing,
         "manipulation_flags": flags,
         "geo_analysis": geo_results,
-        "recommendation": verdict,
+        "recommendation": decision.to_legacy_dict(),
+        # What the verdict could not verify. Kept beside the recommendation
+        # rather than inside it so the recommendation shape stays stable.
+        "unknowns": list(decision.missing_information),
     }
 
     if args.negotiate:
@@ -189,6 +193,12 @@ def print_report(payload):
             print(f"    * {option}")
         if alt.get('repair'):
             print(f"    Repair: {alt['repair']}")
+
+    print("\nWhat GlyphAI could not verify:")
+    for item in payload.get("unknowns", []):
+        print(f"  - {item}")
+    if not payload.get("unknowns"):
+        print("  none")
 
     offer = payload.get("jibbelink_offer")
     if offer:

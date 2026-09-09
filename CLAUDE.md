@@ -46,6 +46,7 @@ GlyphAI/
 │   ├── test_price_extractor.py        # JSON-LD / microdata / meta extraction
 │   ├── test_web_fetch.py              # robots, rate limiting, caching
 │   ├── test_price_sources.py          # Mock vs live source behaviour
+│   ├── test_loyalty.py                # The loyalty oath, enforced: egress only via web_fetch
 │   └── test_cli.py                    # CLI behaviour and output contracts
 ├── README.md
 ├── ARCHITECTURE.md            # System design documentation
@@ -152,6 +153,7 @@ Examples and the scheduler resolve `glyph_profile.json` relative to the repo, so
 - `RecommendationEngine(glyph, diy_knowledge=None)`; `recommend(product, manipulation_flags=None, geo_results=None)` → `{"action", "reasoning", "alternatives"}`.
 - `action` is one of `REJECT`, `PROCEED_WITH_CAUTION`, `EVALUATE_ALTERNATIVES`.
 - Thresholds are class attributes (`HIGH_SEVERITY`, `REJECT_TOLERANCE`, `CAUTION_TOLERANCE`, `GEO_SAVINGS_RATIO`, `DIY_VIABILITY_FLOOR`, `DIY_PRICE_FLOOR`) — tune these rather than editing conditionals.
+- `recommend_decision(...)` returns a typed `Decision` whose `missing_information` lists what the verdict could not verify (unknown price, unchecked was-price, mock regional prices, glyph values with no data source per `UNSOURCED_VALUES`). The CLI emits it as a top-level `unknowns` key and a "What GlyphAI could not verify" block; it never goes inside `recommendation`, whose shape is locked by tests.
 - `generate_recommendation(glyph, product, flags, geo)` is a functional wrapper kept for the original demo call site.
 - Injecting `diy_knowledge` is how tests substitute a knowledge base; it defaults to the real one.
 
@@ -187,4 +189,5 @@ Examples and the scheduler resolve `glyph_profile.json` relative to the repo, so
 - **A missing price is `None`, not `0`.** Anything reading extractor output must treat `None` as unknown. Defaulting it to zero would make free-looking listings sail through the engine.
 - **Diagnostics go to stderr, never stdout.** `cli.py --json` must emit only JSON on stdout so it can be piped. `Glyph.load_profile()` and `DIYKnowledge.load_knowledge()` print their status to `sys.stderr` for exactly this reason; `test_json_stdout_is_not_polluted_by_diagnostics` guards it.
 - **Decision logic belongs in `recommendation_engine.py`,** not in examples or the CLI. `cli.py` only orchestrates and formats.
+- **Network access belongs in `web_fetch.py` only.** `tests/test_loyalty.py` fails if any other shipped module imports an egress-capable library, hard-codes an outbound URL, or if the CLI opens a socket without `--url`. Do not add telemetry, affiliate parameters, or a second fetch path; if a feature needs the network, route it through `PoliteFetcher`.
 - **Watch for silently-skipped logic.** Because `Glyph.load_profile()` swallows errors and the detector uses `.get()` throughout, a mismatched key produces no exception — the rule just never fires. When adding a rule, add a test proving it fires on data shaped the way the examples actually emit it.

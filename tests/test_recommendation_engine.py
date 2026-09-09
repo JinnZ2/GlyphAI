@@ -209,6 +209,56 @@ def test_injected_knowledge_base_is_used():
     assert diy and "options" not in diy[0], "An empty knowledge base yields generic DIY"
 
 
+def test_decision_reports_mock_regional_prices():
+    """Mock in-store prices must be named as mock in the verdict itself."""
+    engine = RecommendationEngine(Glyph())
+    decision = engine.recommend_decision({"name": "widget", "price": 24.99}, [], GEO)
+    mock_lines = [m for m in decision.missing_information if "mock" in m]
+    assert mock_lines and "90210" in mock_lines[0], \
+        "Verdict should say which regional prices are mock"
+
+
+def test_decision_reports_unverifiable_was_price():
+    engine = RecommendationEngine(Glyph())
+    decision = engine.recommend_decision(
+        {"name": "widget", "price": 24.99, "was_price": 49.99}, [], [])
+    assert any("price history" in m and "49.99" in m
+               for m in decision.missing_information), \
+        "A was-price with no history to check it against is an unknown"
+
+
+def test_decision_reports_unknown_price_without_calling_it_zero():
+    engine = RecommendationEngine(Glyph())
+    decision = engine.recommend_decision({"name": "widget"}, [], [])
+    price_lines = [m for m in decision.missing_information if "price is unknown" in m]
+    assert price_lines, "A missing price must be listed as unknown"
+    assert "$0" not in " ".join(decision.missing_information)
+
+
+def test_decision_lists_glyph_values_with_no_data_source():
+    """ethical_threshold has weight in the profile but nothing to act on."""
+    engine = RecommendationEngine(Glyph())
+    decision = engine.recommend_decision({"name": "widget", "price": 24.99}, [], [])
+    joined = " ".join(decision.missing_information)
+    assert "ethical_threshold" in joined, "Unsourced glyph value must be declared"
+    assert "not applied" in joined, "Verdict must say the value was not applied"
+
+
+def test_empty_glyph_declares_no_unsourced_values():
+    engine = RecommendationEngine(Glyph("does_not_exist.json"))
+    decision = engine.recommend_decision({"name": "widget", "price": 24.99}, [], [])
+    assert not any("not applied" in m for m in decision.missing_information), \
+        "A value the profile does not set is not an unknown"
+
+
+def test_unknowns_do_not_change_legacy_result():
+    engine = RecommendationEngine(Glyph())
+    product = {"name": "widget", "price": 24.99, "was_price": 49.99}
+    legacy = engine.recommend(product, [], GEO)
+    assert set(legacy) == {"action", "reasoning", "alternatives"}, \
+        "Unknowns live on the Decision, not in the legacy dict"
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for test in tests:

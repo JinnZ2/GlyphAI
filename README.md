@@ -55,6 +55,11 @@ Manipulation scan: 3 flag(s)
   [0.6] SUSPICIOUS_DISCOUNT: 50% off may indicate inflated 'original' price
   [0.5] SUBSCRIPTION_TRAP: May include recurring charges
 
+Regional pricing (mock data — see ROADMAP.md):
+  90301: in-store $8.99 | online $10.49 | STAY PUT
+  90210: in-store $7.75 | online $9.99 | STAY PUT
+  90001 (local): in-store $9.25 | online $9.25 | Minimal difference—your call
+
 Verdict: REJECT
   - This listing shows 1 serious manipulation tactic
   - Your glyph profile indicates low tolerance for this behavior
@@ -65,7 +70,16 @@ Verdict: REJECT
   Alternative (DIY): Known DIY options for this item
     * Check local Buy Nothing groups
     * Habitat for Humanity ReStore often has lighting
+    * LED retrofits cheaper than new fixtures
     Repair: Most LED failures are driver board, not LEDs - replaceable
+
+What GlyphAI could not verify:
+  - Advertised original price $49.99 could not be checked against price history; no price history exists yet (ROADMAP.md)
+  - In-store prices for region(s) 90301, 90210, 90001 are mock data, not observed (ROADMAP.md)
+  - Your glyph weights ethical_threshold at 0.8, but the listing carries no sourcing or labor data; that value was not applied
+  - Your glyph weights repairability_bias at 0.7, but the listing carries no repairability or parts-availability data; that value was not applied
+  - Your glyph weights signal_noise_ratio at 0.9, but the listing carries no paid-placement or ranking data; that value was not applied
+=======================================================
 ```
 
 The verdict is one of `REJECT`, `PROCEED_WITH_CAUTION`, or `EVALUATE_ALTERNATIVES` —

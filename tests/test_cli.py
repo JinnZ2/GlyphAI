@@ -207,6 +207,24 @@ def test_bare_invocation_shows_help():
     assert "usage:" in out.lower(), "Should print help"
 
 
+def test_report_lists_what_it_could_not_verify():
+    code, out = run(["analyze", "--name", "widget", "--price", "20.0",
+                     "--was-price", "40.0"])
+    assert code == 0
+    assert "could not verify" in out, "Report must carry an unknowns block"
+    assert "mock data" in out, "Mock regional prices must be named as mock"
+    assert "price history" in out, "Unchecked was-price must be named"
+
+
+def test_json_carries_unknowns_beside_recommendation():
+    code, out = run(["--json", "analyze", "--name", "widget", "--price", "20.0"])
+    payload = json.loads(out)
+    assert isinstance(payload.get("unknowns"), list) and payload["unknowns"], \
+        "JSON output must list the verdict's unknowns"
+    assert set(payload["recommendation"]) == {"action", "reasoning", "alternatives"}, \
+        "Unknowns must not leak into the recommendation shape"
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for test in tests:
