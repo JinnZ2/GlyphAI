@@ -27,6 +27,13 @@ class RecommendationEngine:
     # DIY is only suggested above this glyph value and this price.
     DIY_VIABILITY_FLOOR = 0.7
     DIY_PRICE_FLOOR = 15.0
+    # Glyph values that carry weight but have no data source yet. When the
+    # profile sets one, the verdict says so instead of silently skipping it.
+    UNSOURCED_VALUES = {
+        "ethical_threshold": "sourcing or labor data",
+        "repairability_bias": "repairability or parts-availability data",
+        "signal_noise_ratio": "paid-placement or ranking data",
+    }
 
     def __init__(self, glyph, diy_knowledge=None):
         self.glyph = glyph
@@ -113,18 +120,8 @@ class RecommendationEngine:
             else:
                 recommendation["action"] = "EVALUATE_ALTERNATIVES"
 
-        unknown_regions = [
-            result.get("region", "unknown")
-            for result, evidence in zip(geo_results, geographic_evidence)
-            if evidence.source_kind is None
-        ]
-        warnings = []
-        missing_information = []
-        if unknown_regions:
-            warnings.append("Some geographic price evidence has unknown provenance")
-            missing_information.append(
-                "Geographic price provenance for region(s): {}".format(
-                    ", ".join(str(region) for region in unknown_regions)))
+        warnings, missing_information = self._unknowns(
+            product, geo_results, geographic_evidence)
 
         return Decision.from_recommendation(
             recommendation,
@@ -132,6 +129,55 @@ class RecommendationEngine:
             evidence=geographic_evidence,
             missing_information=missing_information,
         )
+
+    def _unknowns(self, product, geo_results, geographic_evidence):
+        """What this verdict could not verify, stated rather than implied.
+
+        Returns (warnings, missing_information). A verdict that lists its
+        unknowns cannot be mistaken for one that checked everything.
+        """
+        warnings = []
+        missing = []
+
+        current_price = product.get('price', product.get('now_price'))
+        if current_price is None:
+            missing.append(
+                "Listing price is unknown; it was not treated as zero")
+        if product.get('was_price') is not None:
+            missing.append(
+                "Advertised original price ${} could not be checked against "
+                "price history; no price history exists yet (ROADMAP.md)".format(
+                    product['was_price']))
+
+        mock_regions = [
+            result.get("region", "unknown")
+            for result, evidence in zip(geo_results, geographic_evidence)
+            if evidence.source_kind == "mock"
+        ]
+        if mock_regions:
+            missing.append(
+                "In-store prices for region(s) {} are mock data, not observed "
+                "(ROADMAP.md)".format(", ".join(str(r) for r in mock_regions)))
+
+        unknown_regions = [
+            result.get("region", "unknown")
+            for result, evidence in zip(geo_results, geographic_evidence)
+            if evidence.source_kind is None
+        ]
+        if unknown_regions:
+            warnings.append("Some geographic price evidence has unknown provenance")
+            missing.append(
+                "Geographic price provenance for region(s): {}".format(
+                    ", ".join(str(region) for region in unknown_regions)))
+
+        for key, needs in sorted(self.UNSOURCED_VALUES.items()):
+            value = self.glyph.get_value(key)
+            if value is not None:
+                missing.append(
+                    "Your glyph weights {} at {}, but the listing carries no {}; "
+                    "that value was not applied".format(key, value, needs))
+
+        return warnings, missing
 
     @staticmethod
     def _geographic_evidence(product, result):
