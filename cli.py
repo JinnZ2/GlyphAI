@@ -11,6 +11,9 @@ Examples:
     python cli.py analyze --file listing.json --json
     python cli.py profile
     python cli.py diy --name "60W LED Bulb"
+    python cli.py footage --event flood --questions
+    python cli.py footage --event flood --answer C-BIRD-1=no \
+        --caption "share before they delete it"
 """
 
 import argparse
@@ -24,6 +27,7 @@ from recommendation_engine import RecommendationEngine
 from bot_network_interface import JibbelinkNegotiator
 from diy_knowledge import DIYKnowledge
 from price_sources import LivePriceSource
+import coupling_check
 
 DEFAULT_ZIP = "90001"
 
@@ -246,6 +250,68 @@ def diy(args):
     return 0
 
 
+def _parse_answers(args):
+    """Merge --answers FILE and --answer ID=VALUE into one dict. Flags win."""
+    answers = {}
+    if args.answers:
+        try:
+            with open(args.answers, 'r', encoding='utf-8') as handle:
+                loaded = json.load(handle)
+        except (OSError, ValueError) as exc:
+            print(f"Could not read answers file: {exc}", file=sys.stderr)
+            return None
+        if not isinstance(loaded, dict):
+            print("Answers file must be a JSON object of cue id -> answer",
+                  file=sys.stderr)
+            return None
+        answers.update(loaded)
+    for item in args.answer or []:
+        if '=' not in item:
+            print(f"--answer expects CUE_ID=yes|no|cannot_see, got {item!r}",
+                  file=sys.stderr)
+            return None
+        cue_id, value = item.split('=', 1)
+        answers[cue_id.strip()] = value.strip().lower()
+    return answers
+
+
+def footage(args):
+    """Guided coupling checklist for a disaster clip. Never says REAL or FAKE."""
+    if args.questions:
+        rows = coupling_check.questions(args.event)
+        if not rows:
+            print(f"Unknown event type {args.event!r}. Known: "
+                  f"{', '.join(coupling_check.event_types())}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps([{"id": i, "layer": l, "timing": t, "question": q}
+                              for i, l, t, q in rows], indent=2))
+            return 0
+        print(f"Coupling questions for {args.event} (answer yes / no / cannot_see):")
+        for cue_id, layer, timing, question in rows:
+            print(f"  [{cue_id}] ({layer}, {timing}) {question}")
+        return 0
+
+    if args.interactive:
+        answers = coupling_check.ask(args.event, output_fn=lambda s: print(s, file=sys.stderr))
+    else:
+        answers = _parse_answers(args)
+        if answers is None:
+            return 2
+
+    try:
+        result = coupling_check.evaluate(args.event, answers, caption=args.caption)
+    except ValueError as exc:
+        print(f"Cannot evaluate: {exc}", file=sys.stderr)
+        return 2
+
+    if args.json:
+        print(json.dumps(result, indent=2))
+        return 0
+    print(coupling_check.render(result))
+    return 0
+
+
 def build_parser():
     parser = argparse.ArgumentParser(
         prog="glyphai",
@@ -283,6 +349,24 @@ def build_parser():
     diy_parser = sub.add_parser('diy', help="Look up DIY alternatives for a product")
     diy_parser.add_argument('--name', required=True, help="Product name")
     diy_parser.set_defaults(func=diy)
+
+    footage_parser = sub.add_parser(
+        'footage',
+        help="Walk the coupling checklist for a disaster clip before sharing it")
+    footage_parser.add_argument('--event', required=True,
+                                help="flood | debris_flow | earthquake | wildfire | "
+                                     "storm | explosion | collapse")
+    footage_parser.add_argument('--questions', action='store_true',
+                                help="Print the questions for this event type and exit")
+    footage_parser.add_argument('--interactive', action='store_true',
+                                help="Ask each question on the terminal")
+    footage_parser.add_argument('--answers',
+                                help="JSON file of cue id -> yes|no|cannot_see")
+    footage_parser.add_argument('--answer', action='append',
+                                help="One answer as CUE_ID=yes|no|cannot_see (repeatable)")
+    footage_parser.add_argument('--caption', default=None,
+                                help="The clip's caption or post text (share-step check)")
+    footage_parser.set_defaults(func=footage)
 
     return parser
 

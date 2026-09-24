@@ -1,0 +1,276 @@
+{
+  "schema": "glyphai-coupling-cues/1",
+  "dispatch": "GLYPH-C1",
+  "principle": "Real events are coupled: every layer shares the same air and ground. A missing reaction BETWEEN layers is the durable tell; pixel artifacts get fixed first as generators improve.",
+  "statuses": {
+    "OBSERVED": "the cue is drawn from field-observation practice; someone who has watched real events uses it",
+    "SECONDARY": "the cue or its mechanism rests on a cited secondary source, carried here and not verified in this environment",
+    "DERIVED": "the cue follows from stated physics (shared air, shared ground, one light source) and has no field or literature source of its own",
+    "PROPOSED": "a candidate cue with neither a field baseline nor a mechanism source; included so it can be tested, not because it is established"
+  },
+  "timings": ["before", "during", "after"],
+  "answers": {
+    "yes": "the layer is visible and it reacts the way a real event would",
+    "no": "the layer is VISIBLE and the expected reaction is absent or contradicted. Do not answer no when the layer is not in frame.",
+    "cannot_see": "the layer is not in frame, the frame is too tight, the audio is stripped, or you cannot tell. Never counts against the clip."
+  },
+  "event_types": ["flood", "debris_flow", "earthquake", "wildfire", "storm", "explosion", "collapse"],
+  "cues": [
+    {
+      "id": "C-BIRD-1",
+      "layer": "birds",
+      "question": "Do birds scatter in irregular takeoff BEFORE the event is visible (water, shaking, blast)?",
+      "expected_if_real": "panic flush, many directions, before the visible arrival",
+      "typical_if_generated": "calm formation (a perfect V), birds that never react, or birds that react only after the visible event",
+      "timing": "before",
+      "applies_to": ["flood", "debris_flow", "earthquake", "explosion", "collapse", "storm", "wildfire"],
+      "status": "OBSERVED",
+      "source": "field practice (dispatch GLYPH-C1)",
+      "mechanism": {
+        "claim": "birds hear infrasound and feel ground vibration ahead of the visible event",
+        "status": "SECONDARY",
+        "source": "Kreithen & Quine 1979, J Comp Physiol 129:1-4 (infrasound detection in pigeons); Streby et al. 2015, Curr Biol (warblers evacuating ahead of storms). Both carried from the dispatch, not read here."
+      }
+    },
+    {
+      "id": "C-ANIMAL-1",
+      "layer": "animals",
+      "question": "Do dogs, livestock or other animals turn, bolt or freeze BEFORE the people around them react?",
+      "expected_if_real": "animals react first; people look at the animals, then toward the event",
+      "typical_if_generated": "animals stand still, graze, or react in step with the people or after them",
+      "timing": "before",
+      "applies_to": ["flood", "debris_flow", "earthquake", "explosion", "collapse", "storm", "wildfire"],
+      "status": "OBSERVED",
+      "source": "field practice (dispatch GLYPH-C1)",
+      "mechanism": {
+        "claim": "ground vibration and infrasound reach animals before the event is visible to people",
+        "status": "DERIVED",
+        "source": "no citation supplied; same physics as C-BIRD-1, not independently sourced"
+      }
+    },
+    {
+      "id": "C-TREE-1",
+      "layer": "trees",
+      "question": "Are trees shaken from the BASE (ground-driven) rather than swaying from the crown (wind-driven)?",
+      "expected_if_real": "trunk and base move with the ground; crown lags; motion is jerky and shares the shake",
+      "typical_if_generated": "smooth crown sway with a still trunk, or trees that do not move while the ground does",
+      "timing": "during",
+      "applies_to": ["earthquake", "explosion", "collapse", "debris_flow"],
+      "status": "DERIVED",
+      "source": "shared ground (dispatch GLYPH-C1)",
+      "mechanism": {
+        "claim": "ground motion enters a tree at the roots; wind enters at the crown",
+        "status": "DERIVED",
+        "source": "physics of the load path; no field or literature source"
+      }
+    },
+    {
+      "id": "C-TREE-2",
+      "layer": "trees",
+      "question": "Do all trees, flags, smoke and loose debris lean or move in ONE consistent wind direction?",
+      "expected_if_real": "one wind direction across the frame, changing together when gusts change",
+      "typical_if_generated": "trees swaying in different directions, or trees still while flags and smoke move",
+      "timing": "during",
+      "applies_to": ["storm", "wildfire", "flood"],
+      "status": "DERIVED",
+      "source": "shared air (dispatch GLYPH-C1)",
+      "mechanism": {
+        "claim": "everything in one frame sits in one wind field",
+        "status": "DERIVED",
+        "source": "physics; no field or literature source"
+      }
+    },
+    {
+      "id": "C-PEOPLE-1",
+      "layer": "people",
+      "question": "Do people turn toward the event BEFORE it reaches them?",
+      "expected_if_real": "heads turn toward the sound or the shake first; running starts after the turn",
+      "typical_if_generated": "people keep walking or looking at the camera until the event is on top of them, or every person reacts on the same frame",
+      "timing": "before",
+      "applies_to": ["flood", "debris_flow", "earthquake", "explosion", "collapse", "storm", "wildfire"],
+      "status": "DERIVED",
+      "source": "dispatch GLYPH-C1 (listed without a status; sound and vibration precede the visible arrival)",
+      "mechanism": {
+        "claim": "people hear and feel the event before they see it",
+        "status": "DERIVED",
+        "source": "physics; no field or literature source"
+      }
+    },
+    {
+      "id": "C-PEOPLE-2",
+      "layer": "people",
+      "question": "Does people's movement track the event (stumble on the shake, brace at the blast, wade at water speed)?",
+      "expected_if_real": "bodies react to the same forces the ground and air show",
+      "typical_if_generated": "people move as if on flat, still ground while everything around them shakes or flows",
+      "timing": "during",
+      "applies_to": ["flood", "debris_flow", "earthquake", "explosion", "collapse", "storm"],
+      "status": "DERIVED",
+      "source": "shared ground and air (dispatch GLYPH-C1)",
+      "mechanism": {
+        "claim": "a body in the scene is loaded by the same ground and air as the rest of the scene",
+        "status": "DERIVED",
+        "source": "physics; no field or literature source"
+      }
+    },
+    {
+      "id": "C-OBJ-1",
+      "layer": "objects",
+      "question": "Do objects keep existing (nothing appears, vanishes, or un-flips between frames)?",
+      "expected_if_real": "objects persist; a car that flips stays flipped; debris carried away stays gone",
+      "typical_if_generated": "objects appear or vanish, text and logos change, a flipped object rights itself",
+      "timing": "during",
+      "applies_to": ["flood", "debris_flow", "earthquake", "explosion", "collapse", "storm", "wildfire"],
+      "status": "SECONDARY",
+      "source": "fact-check practice; the dispatch cites the Nepal 2026 fakes, not verified here",
+      "mechanism": {
+        "claim": "a generator renders each frame from a prototype and does not conserve objects across frames",
+        "status": "SECONDARY",
+        "source": "fact-check practice (dispatch GLYPH-C1); no primary citation"
+      }
+    },
+    {
+      "id": "C-LIGHT-1",
+      "layer": "shadows",
+      "question": "Is there ONE light direction across all objects and all frames?",
+      "expected_if_real": "shadows agree with each other and with the sun or the lamps in frame",
+      "typical_if_generated": "shadows pointing different ways, objects with no shadow, light direction drifting between frames",
+      "timing": "during",
+      "applies_to": ["flood", "debris_flow", "earthquake", "explosion", "collapse", "storm", "wildfire"],
+      "status": "DERIVED",
+      "source": "one light source (dispatch GLYPH-C1)",
+      "mechanism": {
+        "claim": "a scene under one sun has one shadow direction; layers rendered separately need not",
+        "status": "DERIVED",
+        "source": "physics; no field or literature source"
+      }
+    },
+    {
+      "id": "C-SOIL-1",
+      "layer": "soil/water",
+      "question": "Does the water CARRY material (mud, debris, colour) rather than solids dissolving into it?",
+      "expected_if_real": "brown, loaded water; debris rides the surface at flow speed",
+      "typical_if_generated": "clear water over dirt, solids that melt or blur into the flow, debris that hangs still on moving water",
+      "timing": "during",
+      "applies_to": ["flood", "debris_flow"],
+      "status": "DERIVED",
+      "source": "dispatch GLYPH-C1",
+      "mechanism": {
+        "claim": "moving water entrains what it passes over; it does not dissolve wood or stone",
+        "status": "DERIVED",
+        "source": "physics; no field or literature source"
+      }
+    },
+    {
+      "id": "C-WATER-1",
+      "layer": "water",
+      "question": "Does floating debris move WITH the flow, at the flow's speed and direction?",
+      "expected_if_real": "debris, foam and people in the water all travel together",
+      "typical_if_generated": "debris drifting against the flow, faster or slower than the water, or two flow directions in one frame",
+      "timing": "during",
+      "applies_to": ["flood", "debris_flow"],
+      "status": "DERIVED",
+      "source": "dispatch GLYPH-C1",
+      "mechanism": {
+        "claim": "one flow field carries everything in it",
+        "status": "DERIVED",
+        "source": "physics; no field or literature source"
+      }
+    },
+    {
+      "id": "C-DUST-1",
+      "layer": "dust/smoke",
+      "question": "Does dust or smoke rise FROM the impact point and then drift the same way the trees and flags lean?",
+      "expected_if_real": "a plume rooted at the source, drifting downwind with everything else",
+      "typical_if_generated": "a plume with no source, dust that appears everywhere at once, or smoke drifting against the wind the trees show",
+      "timing": "during",
+      "applies_to": ["explosion", "collapse", "earthquake", "wildfire"],
+      "status": "DERIVED",
+      "source": "shared air (dispatch GLYPH-C1)",
+      "mechanism": {
+        "claim": "dust is lofted where energy enters the ground and then rides the shared wind",
+        "status": "DERIVED",
+        "source": "physics; no field or literature source"
+      }
+    },
+    {
+      "id": "C-SOUND-1",
+      "layer": "audio",
+      "question": "At a distance, does the sound arrive AFTER the visible flash or collapse, with a longer delay the farther away it is?",
+      "expected_if_real": "light first, sound later; about three seconds per kilometre",
+      "typical_if_generated": "sound exactly on the visible frame at any distance, or a boom with no visible source",
+      "timing": "after",
+      "applies_to": ["explosion", "collapse"],
+      "status": "DERIVED",
+      "source": "speed of sound (dispatch GLYPH-C1)",
+      "mechanism": {
+        "claim": "sound travels at roughly 340 m/s in air; light is effectively instant",
+        "status": "DERIVED",
+        "source": "physics; no field or literature source"
+      }
+    },
+    {
+      "id": "C-SHAKE-1",
+      "layer": "camera",
+      "question": "Does the CAMERA itself shake when the ground does (a handheld phone on a shaking floor cannot stay steady)?",
+      "expected_if_real": "the frame jolts with the ground; a tripod or a fixed camera shows the room move as one",
+      "typical_if_generated": "a perfectly steady handheld frame while everything inside it shakes",
+      "timing": "during",
+      "applies_to": ["earthquake", "explosion", "collapse"],
+      "status": "DERIVED",
+      "source": "shared ground (dispatch GLYPH-C1)",
+      "mechanism": {
+        "claim": "the recorder stands on the same ground as the scene",
+        "status": "DERIVED",
+        "source": "physics; no field or literature source"
+      }
+    },
+    {
+      "id": "C-WIND-1",
+      "layer": "rain/wind",
+      "question": "Do rain streaks, spray, debris and trees all show the same wind direction, and change together in gusts?",
+      "expected_if_real": "one wind across every layer, gusting together",
+      "typical_if_generated": "vertical rain in a storm that bends the trees sideways, or spray moving against the trees",
+      "timing": "during",
+      "applies_to": ["storm"],
+      "status": "DERIVED",
+      "source": "shared air (dispatch GLYPH-C1)",
+      "mechanism": {
+        "claim": "one wind field",
+        "status": "DERIVED",
+        "source": "physics; no field or literature source"
+      }
+    },
+    {
+      "id": "C-FIRE-1",
+      "layer": "fire",
+      "question": "Do flames, the smoke column and flying embers all lean the same way, downwind of the trees?",
+      "expected_if_real": "flames, smoke and embers agree with the wind the trees show",
+      "typical_if_generated": "flames leaning one way and smoke another, embers falling straight down in a wind, or a plume that ignores the trees",
+      "timing": "during",
+      "applies_to": ["wildfire"],
+      "status": "DERIVED",
+      "source": "shared air (dispatch GLYPH-C1)",
+      "mechanism": {
+        "claim": "one wind field carries flame, smoke and ember alike",
+        "status": "DERIVED",
+        "source": "physics; no field or literature source"
+      }
+    },
+    {
+      "id": "C-FIRE-2",
+      "layer": "animals",
+      "question": "Are animals moving AWAY from the fire front, ahead of the flames rather than beside or toward them?",
+      "expected_if_real": "movement away from the front, ahead of it",
+      "typical_if_generated": "animals grazing beside the flames, or moving toward them",
+      "timing": "before",
+      "applies_to": ["wildfire"],
+      "status": "PROPOSED",
+      "source": "no field baseline and no citation supplied; included to be tested",
+      "mechanism": {
+        "claim": "heat and smoke are aversive and arrive ahead of the flame front",
+        "status": "PROPOSED",
+        "source": "none"
+      }
+    }
+  ]
+}
