@@ -225,6 +225,66 @@ def test_json_carries_unknowns_beside_recommendation():
         "Unknowns must not leak into the recommendation shape"
 
 
+def test_footage_questions_lists_cues_for_event():
+    code, out = run(["footage", "--event", "flood", "--questions"])
+    assert code == 0
+    assert "C-BIRD-1" in out and "cannot_see" in out
+
+
+def test_footage_answers_give_a_coupling_verdict_not_real_or_fake():
+    code, out = run(["footage", "--event", "flood",
+                     "--answer", "C-BIRD-1=no", "--answer", "C-OBJ-1=yes",
+                     "--caption", "share before they delete it"])
+    assert code == 0
+    assert "BROKEN" in out and "C-BIRD-1" in out
+    assert "TIME_ATTACK" in out, "the caption's share urgency must be surfaced"
+    assert "Who posted it first" in out, "provenance steps ride every result"
+    assert "UNMEASURED" in out, "scope limits ride every result"
+    import re
+    assert re.search(r"\b(REAL|FAKE)\b", out) is None and "%" not in out
+
+
+def test_footage_json_is_valid_and_carries_scope_limits():
+    code, out = run(["--json", "footage", "--event", "earthquake",
+                     "--answer", "C-OBJ-1=no"])
+    assert code == 0
+    payload = json.loads(out)
+    assert payload["verdict"] == "COUPLING_BROKEN"
+    assert payload["cues"] == ["C-OBJ-1"]
+    assert len(payload["scope_limits"]) == 4 and len(payload["provenance_steps"]) == 5
+
+
+def test_footage_answers_file_and_flags_merge():
+    import tempfile
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as handle:
+        json.dump({"C-BIRD-1": "yes", "C-OBJ-1": "yes"}, handle)
+        path = handle.name
+    try:
+        code, out = run(["--json", "footage", "--event", "flood",
+                         "--answers", path, "--answer", "C-OBJ-1=no"])
+    finally:
+        os.remove(path)
+    assert code == 0
+    payload = json.loads(out)
+    assert payload["cues"] == ["C-OBJ-1"], "a flag overrides the file"
+
+
+def test_footage_unknown_event_is_not_evaluable_not_an_error():
+    code, out = run(["--json", "footage", "--event", "tsunami"])
+    assert code == 0
+    payload = json.loads(out)
+    assert payload["verdict"] == "NOT_EVALUABLE" and payload["reason"] == "event_type"
+
+
+def test_footage_bad_answer_is_reported_on_stderr():
+    err = io.StringIO()
+    with contextlib.redirect_stderr(err):
+        code, out = run(["--json", "footage", "--event", "flood",
+                         "--answer", "C-BIRD-1=probably"])
+    assert code == 2 and out == ""
+    assert "Cannot evaluate" in err.getvalue()
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for test in tests:

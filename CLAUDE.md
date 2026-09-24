@@ -26,6 +26,8 @@ GlyphAI/
 ├── price_extractor.py         # Reads JSON-LD / microdata / meta price data
 ├── recommendation_engine.py   # RecommendationEngine — the evaluation engine (verdicts)
 ├── diy_knowledge.py           # DIYKnowledge — loads and matches diy_knowledge.json
+├── coupling_check.py          # Guided coupling checklist for disaster footage (GLYPH-C1); no pixels, no model
+├── coupling_cues.json         # Cue set: per event type, each cue with status + source + mechanism status
 ├── bot_network_interface.py   # JibbelinkNegotiator — bot-to-bot negotiation protocol
 ├── scheduler.py               # Simple infinite-loop task runner (60s interval)
 ├── glyph_profile.json         # User values definition (urgency, budget, ethics, etc.)
@@ -47,6 +49,7 @@ GlyphAI/
 │   ├── test_web_fetch.py              # robots, rate limiting, caching
 │   ├── test_price_sources.py          # Mock vs live source behaviour
 │   ├── test_loyalty.py                # The loyalty oath, enforced: egress only via web_fetch
+│   ├── test_coupling_check.py         # Fixtures F1-F6 (regression, not validation), cue file, output contract
 │   └── test_cli.py                    # CLI behaviour and output contracts
 ├── README.md
 ├── ARCHITECTURE.md            # System design documentation
@@ -77,6 +80,7 @@ Be aware of these before extending the system:
 - **Jibbelink security is unimplemented.** `JibbelinkSecurity.md` specifies SHA256 signing, but `create_message()` emits unsigned messages with a hardcoded `confidence` of 0.95.
 - **`ethical_threshold` has no data source.** It is a glyph value with real weight in the user's profile (0.8), but listings carry no sourcing/labor data to compare it against, so no rule consumes it. It was previously read and silently discarded in the recommendation logic. Wiring it up requires a vendor-ethics data source, not just a new rule.
 - **`diy_knowledge.json` is thin.** Matching and loading work, but the file holds a single entry (`led_bulb`). It grows by adding entries, not code. Do not invent repair facts to pad it.
+- **The coupling checklist is unmeasured.** `coupling_check.py` is a guided checklist, not a classifier: the user answers the questions, the code counts them. Its accuracy has never been rated; that needs the four-arm test (untrained | artifact checklist | coupling checklist | field-baseline viewers) on watermark-confirmed fakes. `MIN_ANSWERED_CUES` is a PLACEHOLDER. Fixtures F1–F6 are implementation-authored regression checks. Every literature source in `coupling_cues.json` is carried from the dispatch, not read here.
 
 ## Key Commands
 
@@ -94,6 +98,10 @@ python cli.py --json analyze --file listing.json
 # Inspect the active profile / look up DIY options
 python cli.py profile --verbose
 python cli.py diy --name "60W LED Bulb"
+
+# Walk the coupling checklist for a disaster clip (offline; never says REAL/FAKE)
+python cli.py footage --event flood --questions
+python cli.py footage --event flood --answer C-BIRD-1=no --caption "share before they delete it"
 
 # Run the full demo
 python examples/demo.py
@@ -162,6 +170,14 @@ Examples and the scheduler resolve `glyph_profile.json` relative to the repo, so
 - Matching is token-based: every underscore-separated term in a key must appear in the product name, so `led_bulb` matches `"60W LED Bulb 4-Pack"` but not `"bulb"`. The most specific match wins.
 - `lookup()` returns a copy — mutating it will not corrupt the loaded knowledge.
 
+**`coupling_check`** (`coupling_check.py`)
+- `load_cues(path=None)` validates `coupling_cues.json`: every row needs `status` and `mechanism.status` in `OBSERVED | SECONDARY | DERIVED | PROPOSED`, a `source`, a `timing` in `before | during | after`, and `applies_to` inside `event_types`. A row missing any of these raises.
+- `questions(event_type)` → `[(id, layer, timing, question)]`; `ask(event_type, input_fn, output_fn)` walks them (inject both in tests).
+- `evaluate(event_type, answers, caption=None)` → dict with `verdict` in `COUPLING_BROKEN | COUPLING_CONSISTENT | NOT_EVALUABLE`, `cues` (broken ids), `reason`/`detail` for NOT_EVALUABLE, `share_flags`, and always `provenance_steps` and `scope_limits`. Answers are `yes | no | cannot_see`; `cannot_see` and unasked cues never count against the clip; an answer outside the vocabulary or a cue outside the event raises rather than being ignored.
+- `COUPLING_BROKEN` fires on any `no` ([CHOICE 1]: one contradiction is an observation about two layers); `COUPLING_CONSISTENT` needs `MIN_ANSWERED_CUES` answered yes/no, else `NOT_EVALUABLE(too_few_visible_layers)`.
+- `share_flags(caption)` runs the caption through `ManipulationDetector` with `SHARE_URGENCY_WORDS` added to a per-instance copy of `URGENCY_WORDS` (the class list is untouched, so product detection does not change) and tags each flag with `mechanism` per `MECHANISM_BY_FLAG` (`FAKE_URGENCY` → `TIME_ATTACK`). The detector's own three-key flag shape is not modified.
+- `render(result)` never contains the words REAL or FAKE as labels and never a percentage; `test_verdict_vocabulary_and_no_real_fake_or_percentage` guards it.
+
 **`JibbelinkNegotiator`** (`bot_network_interface.py`)
 - `create_message(msg_type, product_id, price, recipient="VENDOR_BOT")` → message dict, also appended to `self.transcript`.
 - `summarize_transcript()` → list of human-readable strings.
@@ -173,6 +189,7 @@ Examples and the scheduler resolve `glyph_profile.json` relative to the repo, so
 - **Loyalty enforcement:** The glyph includes a binding oath — the AI represents one user only, with no dual loyalties.
 - **Jibbelink protocol:** An open JSON-based protocol for bot-to-bot price negotiation. Messages include sender/recipient IDs, confidence scores, and log visibility settings.
 - **Manipulation flags:** Detection outputs include `FAKE_URGENCY`, `SUSPICIOUS_DISCOUNT`, and `SUBSCRIPTION_TRAP` with severity ratings.
+- **Coupling (disaster footage):** real events are coupled across layers (birds and animals react first, trees are driven from the base, one light direction); generated scenes are often assembled from uncoupled layers. A missing reaction BETWEEN layers is the durable tell. `coupling_check.py` asks the user about it; it does not look at pixels.
 
 ## Important Notes for AI Assistants
 

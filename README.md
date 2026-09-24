@@ -119,8 +119,35 @@ python cli.py analyze --file listing.json --negotiate  # from a JSON file, + Jib
 python cli.py --json analyze --name "..." --price 20   # machine-readable, safe to pipe
 python cli.py profile --verbose                        # show your active values
 python cli.py diy --name "60W LED Bulb"                # DIY alternatives for an item
+python cli.py footage --event flood --questions        # coupling checklist for a disaster clip
 python cli.py --help                                   # everything else
 ```
+
+### Disaster footage: the coupling check
+
+Before sharing a disaster clip, walk a short set of questions about whether
+the scene's layers react to each other. Real events are coupled: birds and
+animals react before the water or shaking is visible, trees are driven from
+the base, people turn toward what they feel, shadows share one light.
+Generated scenes are often assembled from layers that never "hear" the event.
+
+```bash
+python cli.py footage --event flood --questions          # the questions for this event
+python cli.py footage --event flood --interactive        # answer them on the terminal
+python cli.py footage --event flood --answer C-BIRD-1=no --answer C-OBJ-1=yes \
+    --caption "share before they delete it"              # answers as flags, plus the caption
+```
+
+The result is `COUPLING_BROKEN` (with the cue ids), `COUPLING_CONSISTENT`, or
+`NOT_EVALUABLE` (unknown event type, or too few visible layers). `cannot_see`
+is a valid answer and never counts against a clip. The tool never says REAL or
+FAKE and never gives a percentage; it prints the provenance steps (who posted
+first, reverse-search a frame, check date and place, look for a fact-check,
+watermark tools) and its scope limits with every result. The caption goes
+through the same `ManipulationDetector` as a product listing, because "share
+now" is a time attack on the decision to share. The cue set lives in
+`coupling_cues.json` with a status and source per row; the checklist's
+accuracy is **unmeasured**.
 
 **Regional in-store pricing is still mock data.** A single product URL can't
 tell you what three ZIP codes charge in store; that needs per-vendor inventory
