@@ -33,7 +33,9 @@ Anyone who:
 
 ## ✦ License
 
-MIT License. Use it. Fork it. Make it weirder. But don’t sell it out. GlyphAI doesn’t betray.
+CC0-1.0 (public domain dedication). Use it. Fork it. Make it weirder. But don’t sell it out. GlyphAI doesn’t betray.
+
+Relicensed from MIT to CC0-1.0 on 2026-09-24; earlier copies obtained under MIT remain under MIT.
 
 ## Quick Start
 
