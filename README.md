@@ -33,7 +33,7 @@ Anyone who:
 
 ## ✦ License
 
-MIT License. Use it. Fork it. Make it weirder. But don’t sell it out. GlyphAI doesn’t betray.
+CC0 1.0 Universal. Use it. Fork it. Make it weirder. But don’t sell it out. GlyphAI doesn’t betray.
 
 ## Quick Start
 
