@@ -55,7 +55,7 @@ GlyphAI/
 ├── ARCHITECTURE.md            # System design documentation
 ├── ROADMAP.md                 # Development roadmap
 ├── Invite.txt                 # Contribution guidelines
-└── LICENSE                    # MIT
+└── LICENSE                    # CC0-1.0 (relicensed from MIT 2026-09-24)
 ```
 
 ## Architecture
