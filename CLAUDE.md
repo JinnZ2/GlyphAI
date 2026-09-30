@@ -208,3 +208,17 @@ Examples and the scheduler resolve `glyph_profile.json` relative to the repo, so
 - **Decision logic belongs in `recommendation_engine.py`,** not in examples or the CLI. `cli.py` only orchestrates and formats.
 - **Network access belongs in `web_fetch.py` only.** `tests/test_loyalty.py` fails if any other shipped module imports an egress-capable library, hard-codes an outbound URL, or if the CLI opens a socket without `--url`. Do not add telemetry, affiliate parameters, or a second fetch path; if a feature needs the network, route it through `PoliteFetcher`.
 - **Watch for silently-skipped logic.** Because `Glyph.load_profile()` swallows errors and the detector uses `.get()` throughout, a mismatched key produces no exception — the rule just never fires. When adding a rule, add a test proving it fires on data shaped the way the examples actually emit it.
+
+<!-- clone-refspec-note v1 -->
+## Cloning and pushing
+Shallow clones are single-branch by default.
+Before pushing any branch other than main, run:
+
+    git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+    git fetch --depth 1
+
+Or clone with: git clone --depth 1 --no-single-branch <url>
+Without this, the first push of a new branch
+fails the tracking-ref check even when the
+commit landed.
+<!-- /clone-refspec-note v1 -->
