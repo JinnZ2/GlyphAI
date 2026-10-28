@@ -1,5 +1,6 @@
 > Before reading or editing anything here, read READ_ME_THIS_WAY.md.
 > Mismatches, dead ends and odd names in this repo are kept on purpose.
+> Note 2026-10-28: on what "glyph" means here versus the later definition, see [GLYPH_NOTE.md](GLYPH_NOTE.md).
 
 # GlyphAI  
 *A personal AI assistant with a spine.*
